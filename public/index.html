@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Faculty Duty & Substitute Scheduler</title>
+
+  <!-- Tesseract.js for Image-to-Text OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+      --sidebar-width: 230px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ================= HEADER ================= */
+
+    header {
+      height: 64px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+
+      /* Header stays above sidebar */
+      margin-left: var(--sidebar-width);
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      color: var(--primary);
+    }
+
+    #user-profile {
+      font-size: 0.9rem;
+    }
+
+    /* ================= LEFT SIDEBAR ================= */
+
+    nav {
+      position: fixed;
+      left: 0;
+      top: 0;
+
+      width: var(--sidebar-width);
+      height: 100vh;
+
+      background: white;
+      border-right: 1px solid var(--border);
+
+      display: flex;
+      flex-direction: column;
+
+      padding: 20px 15px;
+
+      z-index: 1000;
+    }
+
+    /* Sidebar title */
+
+    nav::before {
+      content: "Faculty Scheduler";
+      display: block;
+
+      color: var(--primary);
+      font-size: 1.2rem;
+      font-weight: 700;
+
+      padding: 0 10px 25px 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    nav button {
+      width: 100%;
+
+      padding: 13px 15px;
+      margin-bottom: 8px;
+
+      border: none;
+      background: transparent;
+
+      color: var(--primary);
+
+      border-radius: 8px;
+
+      font-size: 0.9rem;
+      font-weight: 600;
+
+      text-align: left;
+
+      cursor: pointer;
+
+      transition: 0.2s ease;
+    }
+
+    nav button:hover {
+      background: var(--primary-light);
+    }
+
+    nav button.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* ================= MAIN CONTENT ================= */
+
+    main {
+      margin-left: var(--sidebar-width);
+      padding: 20px;
+    }
+
+    /* ================= TAB CONTENT ================= */
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* ================= CARDS ================= */
+
+    .card {
+      background: var(--card);
+
+      padding: 16px;
+
+      border-radius: 12px;
+
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+      margin-bottom: 16px;
+    }
+
+    .card h3 {
+      margin-bottom: 5px;
+    }
+
+    /* ================= GRID ================= */
+
+    .grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    /* ================= FORM ================= */
+
+    label {
+      display: block;
+
+      font-size: 0.85rem;
+      font-weight: 600;
+
+      margin-bottom: 4px;
+      margin-top: 12px;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+
+      padding: 10px;
+
+      border: 1px solid #cbd5e1;
+
+      border-radius: 6px;
+
+      font-size: 0.9rem;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    button.btn-action {
+      background: var(--primary);
+
+      color: white;
+
+      font-weight: 600;
+
+      border: none;
+
+      margin-top: 12px;
+
+      cursor: pointer;
+    }
+
+    button.btn-action:hover {
+      background: #4338ca;
+    }
+
+    /* ================= TABLE ================= */
+
+    table {
+      width: 100%;
+
+      border-collapse: collapse;
+
+      margin-top: 10px;
+
+      font-size: 0.85rem;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--border);
+
+      padding: 10px;
+
+      text-align: center;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 700;
+    }
+
+    td[contenteditable="true"] {
+      cursor: text;
+      background: #ffffff;
+    }
+
+    td[contenteditable="true"]:focus {
+      outline: 2px solid var(--primary);
+      background: #eef2ff;
+    }
+
+    /* ================= STATUS ================= */
+
+    .status-absent {
+      background: #fee2e2;
+
+      color: #991b1b;
+
+      padding: 2px 6px;
+
+      border-radius: 4px;
+    }
+
+    /* ================= OCR ================= */
+
+    #ocrStatus {
+      margin-top: 10px;
+      font-weight: 600;
+    }
+
+    #ocrResult {
+      background: #f1f5f9;
+
+      padding: 10px;
+
+      margin-top: 8px;
+
+      border-radius: 6px;
+
+      font-size: 0.8rem;
+
+      white-space: pre-wrap;
+
+      min-height: 50px;
+    }
+
+    /* ================= MOBILE ================= */
+
+    @media (max-width: 700px) {
+
+      :root {
+        --sidebar-width: 190px;
+      }
+
+      header {
+        padding: 0 15px;
+      }
+
+      #user-profile {
+        font-size: 0.75rem;
+      }
+
+      nav {
+        width: 190px;
+      }
+
+      nav button {
+        font-size: 0.8rem;
+      }
+
+      main {
+        padding: 15px;
+      }
+    }
+
+    /* ================= SMALL MOBILE ================= */
+
+    @media (max-width: 500px) {
+
+      :root {
+        --sidebar-width: 160px;
+      }
+
+      nav {
+        width: 160px;
+        padding: 15px 10px;
+      }
+
+      nav::before {
+        font-size: 1rem;
+        padding-bottom: 18px;
+      }
+
+      nav button {
+        padding: 10px;
+        font-size: 0.75rem;
+      }
+
+      header {
+        margin-left: var(--sidebar-width);
+      }
+
+      #user-profile {
+        display: none;
+      }
+
+      main {
+        margin-left: var(--sidebar-width);
+        padding: 10px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+    }
+    /* ================= LOGIN OVERLAY ================= */
+    #login-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #login-card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    #login-card h2 { margin-bottom: 20px; color: var(--primary); text-align: center; }
+  </style>
+</head>
+
+<body>
+
+  <!-- ================= LOGIN OVERLAY ================= -->
+  <div id="login-overlay">
+    <div id="login-card">
+      <h2>Scheduler Login</h2>
+      <form id="loginForm">
+        <label>Faculty ID</label>
+        <input type="text" id="loginFacultyId" required placeholder="e.g. HOS001 or FAC001" />
+        <label>Password</label>
+        <input type="password" id="loginPassword" required placeholder="password123" />
+        <button type="submit" class="btn-action">Login</button>
+      </form>
+      <div id="loginError" style="color: red; margin-top: 10px; font-size: 0.85rem; text-align: center;"></div>
+    </div>
+  </div>
+
+  <!-- ================= LEFT NAVIGATION ================= -->
+
+  <nav>
+    <button class="active" onclick="switchTab('timetable', this)">
+      My Schedule
+    </button>
+
+    <button onclick="switchTab('substitute', this)">
+      Adjust/Substitute
+    </button>
+
+    <button onclick="switchTab('scan', this)">
+      Upload Paper Sheet
+    </button>
+
+    <button onclick="switchTab('attendance', this)">
+      Attendance Track
+    </button>
+  </nav>
+
+
+  <!-- ================= HEADER ================= -->
+
+  <header>
+    <h1>Faculty Scheduler</h1>
+
+    <span id="user-profile">
+      Prof. Sarah (ID: CS102)
+    </span>
+  </header>
+
+
+  <!-- ================= MAIN CONTENT ================= -->
+
+  <main>
+
+    <!-- ================= TAB 1: TIMETABLE ================= -->
+
+    <section id="timetable" class="tab-content active">
+
+      <div class="card">
+
+        <h3>Weekly Schedule (Editable Shortcuts)</h3>
+
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">
+          Use shortcuts (e.g., CS = Computer Sci, MAT = Maths).
+        </p>
+
+        <div style="overflow-x:auto;">
+
+          <table>
+
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>P1</th>
+                <th>P2</th>
+                <th>P3</th>
+                <th>P4</th>
+              </tr>
+            </thead>
+
+            <tbody id="timetableBody">
+              <!-- Timetable rows will be injected here via JavaScript -->
+            </tbody>
+
+          </table>
+
+        </div>
+
+        <button class="btn-action" onclick="saveSchedule()">
+          Save Changes
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= TAB 2: SUBSTITUTE ================= -->
+
+    <section id="substitute" class="tab-content">
+
+      <div class="card">
+
+        <h3>Request Period Adjustment</h3>
+
+        <form id="subForm">
+
+          <label>Select Date</label>
+
+          <input type="date" id="subDate" required onchange="checkAvailability()" />
+
+
+          <label>Period & Branch (Timetable ID)</label>
+
+          <select id="subTimetable" onchange="checkAvailability()">
+
+            <option value="">-- Select Period --</option>
+          </select>
+
+
+          <label>Assign Substitute Faculty</label>
+
+          <select id="subFaculty">
+
+            <option value="">-- Select Available Faculty --</option>
+          </select>
+
+
+          <button type="submit" class="btn-action">
+            Send Request
+          </button>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= TAB 3: OCR ================= -->
+
+    <section id="scan" class="tab-content">
+
+      <div class="card">
+
+        <h3>Scan Paper Timetable Sheet</h3>
+
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">
+          Upload a picture of your paper timetable to automatically import it.
+        </p>
+
+
+        <input
+          type="file"
+          id="imageInput"
+          accept="image/*"
+        />
+
+
+        <button
+          onclick="processImage()"
+          class="btn-action"
+        >
+          Extract Schedule
+        </button>
+
+
+        <div id="ocrStatus"></div>
+
+
+        <pre id="ocrResult"></pre>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= TAB 4: ATTENDANCE ================= -->
+
+    <section id="attendance" class="tab-content">
+
+      <div class="card">
+
+        <h3>Absence Tracker</h3>
+
+
+        <div
+          class="grid"
+          style="margin-bottom:12px;"
+        >
+
+          <div
+            style="
+              background:#fef2f2;
+              padding:12px;
+              border-radius:8px;
+              text-align:center;
+            "
+          >
+
+            <h4 style="color:#b91c1c;">
+              2 Days
+            </h4>
+
+            <span style="font-size:0.75rem;">
+              This Month
+            </span>
+
+          </div>
+
+
+          <div
+            style="
+              background:#f0fdf4;
+              padding:12px;
+              border-radius:8px;
+              text-align:center;
+            "
+          >
+
+            <h4 style="color:#15803d;">
+              94%
+            </h4>
+
+            <span style="font-size:0.75rem;">
+              Attendance Rate
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <h4>
+          Absence History
+        </h4>
+
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>Date</th>
+              <th>Reason</th>
+              <th>Status</th>
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            <tr>
+
+              <td>
+                10 Aug 2026
+              </td>
+
+              <td>
+                Sick Leave
+              </td>
+
+              <td>
+                <span class="status-absent">
+                  Substituted
+                </span>
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script src="js/app.js"></script>
+
+</body>
+</html>

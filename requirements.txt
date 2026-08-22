@@ -1,0 +1,4 @@
+bcryptjs
+express
+express-session
+multer

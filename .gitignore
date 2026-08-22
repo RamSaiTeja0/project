@@ -1,0 +1,3 @@
+node_modules/
+database/scheduler.db
+.env
