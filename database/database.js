@@ -1,25 +1,49 @@
-const { DatabaseSync } = require('node:sqlite');
+require('dotenv').config();
+const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, 'scheduler.db');
+// Configure the database connection using the environment variable
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false } // Required for Neon
+});
+
 const schemaPath = path.join(__dirname, 'schema.sql');
 
-// Open the database (creates it if it doesn't exist)
-const db = new DatabaseSync(dbPath);
-
-// Enable foreign keys
-db.exec('PRAGMA foreign_keys = ON;');
-
 // Initialize database with schema if it's empty
-const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
-if (!tables) {
-    console.log("Initializing database from schema...");
-    const schema = fs.readFileSync(schemaPath, 'utf-8');
-    db.exec(schema);
-    console.log("Database initialized with demo data.");
-} else {
-    console.log("Database already exists.");
+async function initDB() {
+    if (!process.env.DATABASE_URL) {
+        console.warn("WARNING: DATABASE_URL is not set in .env file.");
+        return;
+    }
+
+    try {
+        const client = await pool.connect();
+        
+        // Check if the users table exists
+        const res = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'users'
+            );
+        `);
+        
+        if (!res.rows[0].exists) {
+            console.log("Initializing Postgres database from schema...");
+            const schema = fs.readFileSync(schemaPath, 'utf-8');
+            await client.query(schema);
+            console.log("Database initialized with demo data.");
+        } else {
+            console.log("Postgres database already exists.");
+        }
+        
+        client.release();
+    } catch (err) {
+        console.error("Error initializing database:", err);
+    }
 }
 
-module.exports = db;
+initDB();
+
+module.exports = pool;

@@ -1,4 +1,6 @@
 bcryptjs
+dotenv
 express
 express-session
 multer
+pg
