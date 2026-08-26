@@ -11,7 +11,7 @@ A full-stack Node.js/Express college web application that solves the problem of 
 ## Architecture
 - **Frontend**: HTML/CSS/Vanilla JavaScript (integrated with existing `demo_2.html` design)
 - **Backend**: Node.js, Express.js
-- **Database**: SQLite (via `better-sqlite3`)
+- **Database**: PostgreSQL (Neon Serverless) via `pg`
 - **Authentication**: `express-session`, `bcryptjs`
 
 ## Getting Started

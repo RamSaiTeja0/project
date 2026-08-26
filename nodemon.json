@@ -1,0 +1,16 @@
+{
+  "watch": [
+    "server.js",
+    "routes",
+    "middleware",
+    "public"
+  ],
+  "ext": "js,html,css,json",
+  "ignore": [
+    "database/*.db*",
+    "database/*.sqlite*",
+    "node_modules",
+    "uploads",
+    ".git"
+  ]
+}

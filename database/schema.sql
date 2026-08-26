@@ -80,16 +80,25 @@ INSERT INTO subjects (subject_code, subject_name, department) VALUES
 ('CS304', 'Java', 'CSE');
 
 -- Demo Timetable for CSE-A
--- Monday
+-- Monday (7 x 45min periods, 15min break after P3, starts 08:00)
 INSERT INTO timetable (branch_id, day, period, start_time, end_time, subject_id, faculty_id, room) VALUES
-(1, 'Monday', 1, '09:00', '10:00', 1, 2, 'Room 101'), -- DBMS - Ravi
-(1, 'Monday', 2, '10:00', '11:00', 2, 5, 'Room 101'), -- OS - Priya
-(1, 'Monday', 3, '11:00', '12:00', 3, 4, 'Room 101'); -- CN - Kiran
+(1, 'Monday', 1, '08:00', '08:45', 1, 2, 'Room 101'), -- DBMS - Ravi
+(1, 'Monday', 2, '08:45', '09:30', 2, 5, 'Room 101'), -- OS - Priya
+(1, 'Monday', 3, '09:30', '10:15', 3, 4, 'Room 101'), -- CN - Kiran
+(1, 'Monday', 4, '10:30', '11:15', 4, 3, 'Room 101'), -- Java - Anitha
+(1, 'Monday', 5, '11:15', '12:00', 1, 2, 'Room 101'), -- DBMS - Ravi
+(1, 'Monday', 6, '12:00', '12:45', 3, 5, 'Room 101'), -- CN - Priya
+(1, 'Monday', 7, '12:45', '13:30', 2, 4, 'Room 101'); -- OS - Kiran
 
 -- Tuesday
 INSERT INTO timetable (branch_id, day, period, start_time, end_time, subject_id, faculty_id, room) VALUES
-(1, 'Tuesday', 1, '09:00', '10:00', 4, 2, 'Room 101'), -- Java - Ravi
-(1, 'Tuesday', 2, '10:00', '11:00', 1, 5, 'Room 101'); -- DBMS - Priya
+(1, 'Tuesday', 1, '08:00', '08:45', 4, 2, 'Room 101'), -- Java - Ravi
+(1, 'Tuesday', 2, '08:45', '09:30', 1, 5, 'Room 101'), -- DBMS - Priya
+(1, 'Tuesday', 3, '09:30', '10:15', 2, 3, 'Room 101'), -- OS - Anitha
+(1, 'Tuesday', 4, '10:30', '11:15', 3, 4, 'Room 101'), -- CN - Kiran
+(1, 'Tuesday', 5, '11:15', '12:00', 4, 5, 'Room 101'), -- Java - Priya
+(1, 'Tuesday', 6, '12:00', '12:45', 1, 2, 'Room 101'), -- DBMS - Ravi
+(1, 'Tuesday', 7, '12:45', '13:30', 3, 4, 'Room 101'); -- CN - Kiran
 
 -- Demo Timetable for CSE-B (so some faculty are busy)
 -- Monday

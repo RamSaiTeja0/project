@@ -357,10 +357,45 @@
         padding: 12px;
       }
     }
+    /* ================= LOGIN OVERLAY ================= */
+    #login-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #login-card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    #login-card h2 { margin-bottom: 20px; color: var(--primary); text-align: center; }
   </style>
 </head>
 
 <body>
+
+  <!-- ================= LOGIN OVERLAY ================= -->
+  <div id="login-overlay">
+    <div id="login-card">
+      <h2>Scheduler Login</h2>
+      <form id="loginForm">
+        <label>Faculty ID</label>
+        <input type="text" id="loginFacultyId" required placeholder="e.g. HOS001 or FAC001" />
+        <label>Password</label>
+        <input type="password" id="loginPassword" required placeholder="password123" />
+        <button type="submit" class="btn-action">Login</button>
+      </form>
+      <div id="loginError" style="color: red; margin-top: 10px; font-size: 0.85rem; text-align: center;"></div>
+    </div>
+  </div>
 
   <!-- ================= LEFT NAVIGATION ================= -->
 
@@ -388,9 +423,14 @@
   <header>
     <h1>Faculty Scheduler</h1>
 
-    <span id="user-profile">
-      Prof. Sarah (ID: CS102)
-    </span>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span id="user-profile">
+        Loading...
+      </span>
+      <button id="logoutBtn" onclick="logout()" style="width: auto; padding: 6px 14px; font-size: 0.8rem; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; display: none;">
+        Logout
+      </button>
+    </div>
   </header>
 
 
@@ -417,55 +457,19 @@
             <thead>
               <tr>
                 <th>Day</th>
-                <th>P1</th>
-                <th>P2</th>
-                <th>P3</th>
-                <th>P4</th>
+                <th>P1<br><small>08:00–08:45</small></th>
+                <th>P2<br><small>08:45–09:30</small></th>
+                <th>P3<br><small>09:30–10:15</small></th>
+                <th style="background:#fef9c3; color:#92400e;">&#x2615; Break<br><small>10:15–10:30</small></th>
+                <th>P4<br><small>10:30–11:15</small></th>
+                <th>P5<br><small>11:15–12:00</small></th>
+                <th>P6<br><small>12:00–12:45</small></th>
+                <th>P7<br><small>12:45–13:30</small></th>
               </tr>
             </thead>
 
-            <tbody>
-
-              <tr>
-                <td>Monday</td>
-
-                <td contenteditable="true">
-                  CS (B1)
-                </td>
-
-                <td contenteditable="true">
-                  Free
-                </td>
-
-                <td contenteditable="true">
-                  MAT (B2)
-                </td>
-
-                <td contenteditable="true">
-                  PHY (B1)
-                </td>
-              </tr>
-
-              <tr>
-                <td>Tuesday</td>
-
-                <td contenteditable="true">
-                  Free
-                </td>
-
-                <td contenteditable="true">
-                  CS (B2)
-                </td>
-
-                <td contenteditable="true">
-                  PHY (B3)
-                </td>
-
-                <td contenteditable="true">
-                  Free
-                </td>
-              </tr>
-
+            <tbody id="timetableBody">
+              <!-- Timetable rows will be injected here via JavaScript -->
             </tbody>
 
           </table>
@@ -493,36 +497,22 @@
 
           <label>Select Date</label>
 
-          <input type="date" required />
+          <input type="date" id="subDate" required onchange="checkAvailability()" />
 
 
-          <label>Period & Branch</label>
+          <label>Period & Branch (Timetable ID)</label>
 
-          <select>
+          <select id="subTimetable" onchange="checkAvailability()">
 
-            <option>
-              Period 1 - CS (Branch 1)
-            </option>
-
-            <option>
-              Period 3 - MAT (Branch 2)
-            </option>
-
+            <option value="">-- Select Period --</option>
           </select>
 
 
           <label>Assign Substitute Faculty</label>
 
-          <select>
+          <select id="subFaculty">
 
-            <option>
-              Dr. Alan (ID: CS105)
-            </option>
-
-            <option>
-              Prof. Emma (ID: MAT101)
-            </option>
-
+            <option value="">-- Select Available Faculty --</option>
           </select>
 
 
@@ -531,7 +521,62 @@
           </button>
 
         </form>
+      </div>
 
+      <!-- Card 2: Assigned duties to take as substitute teacher -->
+      <div class="card" style="margin-top: 16px;">
+        <h3>My Assigned Substitute Duties</h3>
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">
+          Classes you need to substitute for. Check the box when you take the class to notify the original teacher.
+        </p>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Day & Period</th>
+                <th>Subject</th>
+                <th>Branch</th>
+                <th>Room</th>
+                <th>Original Teacher</th>
+                <th>Attended Class?</th>
+              </tr>
+            </thead>
+            <tbody id="myDutiesBody">
+              <tr>
+                <td colspan="7" style="color:#94a3b8;">No substitute duties assigned.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card 3: Requests sent by current teacher -->
+      <div class="card" style="margin-top: 16px;">
+        <h3>My Sent Substitution Requests</h3>
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">
+          Track whether the substitute teacher has attended your requested class.
+        </p>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Day & Period</th>
+                <th>Subject</th>
+                <th>Branch</th>
+                <th>Room</th>
+                <th>Assigned Substitute</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="myRequestsBody">
+              <tr>
+                <td colspan="7" style="color:#94a3b8;">No substitution requests sent.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </section>
@@ -680,132 +725,7 @@
   </main>
 
 
-  <!-- ================= JAVASCRIPT ================= -->
-
-  <script>
-
-    /* ================= TAB SWITCHING ================= */
-
-    function switchTab(tabId, clickedButton) {
-
-      // Hide all sections
-      document
-        .querySelectorAll('.tab-content')
-        .forEach(section => {
-          section.classList.remove('active');
-        });
-
-
-      // Remove active from all nav buttons
-      document
-        .querySelectorAll('nav button')
-        .forEach(button => {
-          button.classList.remove('active');
-        });
-
-
-      // Show selected section
-      document
-        .getElementById(tabId)
-        .classList.add('active');
-
-
-      // Activate clicked button
-      clickedButton.classList.add('active');
-
-    }
-
-
-    /* ================= SAVE SCHEDULE ================= */
-
-    function saveSchedule() {
-
-      alert("Schedule changes saved successfully!");
-
-    }
-
-
-    /* ================= SUBSTITUTE FORM ================= */
-
-    document
-      .getElementById("subForm")
-      .addEventListener("submit", function(event) {
-
-        event.preventDefault();
-
-        alert("Substitute request sent successfully!");
-
-      });
-
-
-    /* ================= OCR IMAGE PROCESSING ================= */
-
-    async function processImage() {
-
-      const fileInput =
-        document.getElementById('imageInput');
-
-      const status =
-        document.getElementById('ocrStatus');
-
-      const result =
-        document.getElementById('ocrResult');
-
-
-      // Check image
-      if (!fileInput.files[0]) {
-
-        alert(
-          'Please choose an image file first!'
-        );
-
-        return;
-
-      }
-
-
-      status.innerText =
-        "Scanning timetable image... Please wait.";
-
-      result.innerText = "";
-
-
-      try {
-
-        const worker =
-          await Tesseract.createWorker('eng');
-
-
-        const ret =
-          await worker.recognize(
-            fileInput.files[0]
-          );
-
-
-        status.innerText =
-          "Scanning complete!";
-
-
-        result.innerText =
-          ret.data.text;
-
-
-        await worker.terminate();
-
-      }
-
-      catch (err) {
-
-        status.innerText =
-          "Error scanning image.";
-
-        console.error(err);
-
-      }
-
-    }
-
-  </script>
+  <script src="public/js/app.js"></script>
 
 </body>
 </html>
