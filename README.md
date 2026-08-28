@@ -1,33 +1,38 @@
 # Interactive College Faculty Duty & Substitute Scheduler
 
-A full-stack Node.js/Express college web application that solves the problem of finding free substitute faculty for a given timetable period.
+A full-stack Node.js/Express college web application that solves the problem of finding free substitute faculty for a given timetable period, with 100% dynamic timetable generation from uploaded files.
 
 ## Features
-- **HOS Role**: Manage official timetables and verify faculty lists.
-- **Faculty Role**: View timetables, request substitutes, and assign free faculty.
-- **Substitute Availability Logic**: The backend strictly checks the official timetable to only return faculty who are *FREE* on the requested day and period.
-- **OCR Demo**: Basic Tesseract.js integration for scanning paper timetables.
+- **100% Dynamic Timetable Table Generation**:
+  - Upload **Excel (`.xlsx`, `.xls`)**, **CSV (`.csv`)**, **PDF (`.pdf`)**, or **Photos (`.png`, `.jpg`)** to instantly generate your timetable table.
+  - Understands the **visual table structure**: day rows, period columns, period timings, break columns, empty/free cells, and multi-period merged cells (e.g. Labs occupying P1–P3 or P5–P7).
+  - Works with any schedule: 5, 6, 7, 8, 9 periods, custom timings, and flexible days.
+  - Zero hardcoding: the uploaded file is always the 100% source of truth.
+- **In-Memory Temporary Database**:
+  - Zero configuration or external database server required.
+  - Ready immediately with seeded faculty, branches, and timetable periods.
+- **HOS Role**: Manage official timetables, live-edit cells, and import schedules.
+- **Faculty Role**: View timetables, request substitutes, and view assigned duties.
+- **Substitute Availability Logic**: Strictly checks the official timetable to only return faculty who are *FREE* on the requested day and period.
 
 ## Architecture
 - **Frontend**: HTML/CSS/Vanilla JavaScript (integrated with existing `demo_2.html` design)
 - **Backend**: Node.js, Express.js
-- **Database**: PostgreSQL (Neon Serverless) via `pg`
+- **Database Engine**: In-Memory Temporary Database
 - **Authentication**: `express-session`, `bcryptjs`
+- **Vision / OCR**: Gemini AI Vision API + Client-Side SheetJS, PDF.js, and Tesseract Spatial Layout Analysis
 
 ## Getting Started
 
-1. **Prerequisites**: Ensure you have [Node.js](https://nodejs.org/) installed on your machine.
-2. **Install Dependencies**:
-   Open a terminal in this project directory and run:
+1. **Install Dependencies**:
    ```bash
    npm install
    ```
-3. **Start the Server**:
+2. **Start the Server**:
    ```bash
    npm start
    ```
-   The database will automatically initialize and populate with demo data on the first run.
-4. **Access the App**:
+3. **Access the App**:
    Open your browser and navigate to `http://localhost:3000`
 
 ## Demo Login Credentials
@@ -35,7 +40,7 @@ A full-stack Node.js/Express college web application that solves the problem of 
 **HOS (Head of Section - CSE):**
 - Faculty ID: `HOS001`
 - Password: `password123`
-- *Permissions: Can view and edit the official timetable.*
+- *Permissions: Can view and edit the official timetable, upload timetable files.*
 
 **Faculty (CSE):**
 - Faculty ID: `FAC001` (Dr. Ravi)
@@ -43,12 +48,11 @@ A full-stack Node.js/Express college web application that solves the problem of 
 - Faculty ID: `FAC003` (Prof. Kiran)
 - Faculty ID: `FAC004` (Prof. Priya)
 - Password (for all demo faculty): `password123`
-- *Permissions: Can view timetable, but cannot edit. Can request substitutes.*
+- *Permissions: Can view timetable, request substitutes, mark duties attended.*
 
-## Testing the Substitute Flow
-1. Log in as `FAC001` (Dr. Ravi).
-2. Go to the **Adjust/Substitute** tab.
-3. Select a date (e.g., a Monday).
-4. Select a period (e.g., Monday P1).
-5. The system will query the database and populate the Substitute Faculty dropdown with only the faculty members who are **free** during Monday P1.
-6. Select a substitute and submit the request.
+## Testing Dynamic Upload & Timetable Generation
+1. Log in as `HOS001` (or click Quick Login).
+2. Go to the **Upload Paper Sheet** tab (or use the quick upload banner at the top of **My Schedule**).
+3. Drop an Excel, CSV, PDF, or Photo of a timetable, or choose a 1-click department preset.
+4. The system analyzes the table geometry, detects the day rows, period columns, timings, breaks, and merged lab spans.
+5. The generated table is immediately rendered in the Weekly Schedule and Extracted Grid with live inline editing enabled!

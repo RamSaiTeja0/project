@@ -1,13 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Faculty Duty & Substitute Scheduler</title>
 
+  <!-- PDF.js for Instant PDF Timetable Import -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
   <!-- Tesseract.js for Image-to-Text OCR -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- SheetJS for Instant Excel / CSV Timetable Import -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     :root {
@@ -266,27 +274,170 @@
       border-radius: 4px;
     }
 
-    /* ================= OCR ================= */
+    /* ================= OCR & SCAN STYLES ================= */
+    .ocr-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      margin-bottom: 14px;
+    }
 
-    #ocrStatus {
-      margin-top: 10px;
+    .ocr-drop-zone:hover, .ocr-drop-zone.dragover {
+      border-color: var(--primary);
+      background: #eef2ff;
+    }
+
+    .image-preview-container {
+      display: none;
+      margin-top: 14px;
+      text-align: center;
+      padding: 12px;
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+
+    .image-preview-container img {
+      max-height: 220px;
+      max-width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      object-fit: contain;
+    }
+
+    .ocr-progress-box {
+      display: none;
+      margin-top: 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+    }
+
+    .extracted-grid-card {
+      display: none;
+      margin-top: 20px;
+      border-top: 2px solid var(--border);
+      padding-top: 18px;
+    }
+
+    .grid-cell-editable {
+      cursor: text;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .grid-cell-editable:hover {
+      background: #f8fafc;
+    }
+
+    .grid-cell-editable:focus {
+      background: #eef2ff;
+      outline: 2px solid var(--primary);
       font-weight: 600;
+      color: var(--primary);
+    }
+
+    .cell-needs-verification {
+      background: #fffbeb !important;
+      border: 1.5px dashed #f59e0b !important;
+      color: #92400e !important;
+      font-weight: 600;
+      position: relative;
+    }
+
+    .cell-needs-verification:focus {
+      background: #fef3c7 !important;
+      outline: 2px solid #d97706 !important;
+    }
+
+    .verification-warning-pill {
+      display: inline-block;
+      font-size: 0.65rem;
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-top: 3px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .validation-summary-card {
+      display: none;
+      margin-top: 18px;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .stat-pill-success {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .stat-pill-warning {
+      background: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    .stat-pill-error {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .stat-pill-info {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
     }
 
     #ocrResult {
-      background: #f1f5f9;
-
-      padding: 10px;
-
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 12px;
       margin-top: 8px;
-
-      border-radius: 6px;
-
+      border-radius: 8px;
       font-size: 0.8rem;
-
+      font-family: monospace;
       white-space: pre-wrap;
-
-      min-height: 50px;
+      max-height: 180px;
+      overflow-y: auto;
     }
 
     /* ================= MOBILE ================= */
@@ -358,14 +509,10 @@
         padding: 12px;
       }
     }
-
     /* ================= LOGIN OVERLAY ================= */
     #login-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(5px);
       z-index: 9999;
@@ -373,21 +520,15 @@
       justify-content: center;
       align-items: center;
     }
-
     #login-card {
       background: white;
       padding: 30px;
       border-radius: 12px;
       width: 100%;
       max-width: 400px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
-
-    #login-card h2 {
-      margin-bottom: 20px;
-      color: var(--primary);
-      text-align: center;
-    }
+    #login-card h2 { margin-bottom: 20px; color: var(--primary); text-align: center; }
   </style>
 </head>
 
@@ -395,7 +536,7 @@
 
   <!-- ================= PERIOD DETAIL MODAL ================= -->
   <div id="period-modal-overlay"
-    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; display:none; align-items:center; justify-content:center;">
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center;">
     <div id="period-modal"
       style="background:#1e293b; border:1px solid #334155; border-radius:16px; padding:28px 32px; max-width:420px; width:90%; box-shadow:0 24px 60px rgba(0,0,0,0.5); position:relative; font-family:inherit;">
       <button onclick="closePeriodModal()"
@@ -404,18 +545,114 @@
     </div>
   </div>
 
-  <!-- ================= LOGIN OVERLAY ================= -->
+  <!-- ================= SIGN IN & SIGN UP AUTH PORTAL ================= -->
   <div id="login-overlay">
-    <div id="login-card">
-      <h2>Scheduler Login</h2>
-      <form id="loginForm">
-        <label>Faculty ID</label>
-        <input type="text" id="loginFacultyId" required placeholder="e.g. HOS001 or FAC001" />
-        <label>Password</label>
-        <input type="password" id="loginPassword" required placeholder="password123" />
-        <button type="submit" class="btn-action">Login</button>
-      </form>
-      <div id="loginError" style="color: red; margin-top: 10px; font-size: 0.85rem; text-align: center;"></div>
+    <div id="login-card" style="max-width: 440px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.8); background: #ffffff; padding: 28px 32px;">
+      
+      <!-- Brand Header -->
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); color: white; font-size: 1.7rem; margin-bottom: 10px; box-shadow: 0 6px 16px rgba(79,70,229,0.35);">
+          🎓
+        </div>
+        <h2 style="color: #1e1b4b; font-size: 1.45rem; font-weight: 800; margin-bottom: 4px;">Faculty Scheduler</h2>
+        <p style="color: #64748b; font-size: 0.82rem;">Sign in to access your timetable & duty portal</p>
+      </div>
+
+      <!-- Auth Switcher Tabs -->
+      <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-bottom: 20px;">
+        <button type="button" id="tabBtnSignIn" onclick="switchAuthTab('signin')" style="flex: 1; padding: 9px 12px; border: none; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; background: var(--primary); color: white; transition: all 0.2s ease;">
+          Sign In
+        </button>
+        <button type="button" id="tabBtnSignUp" onclick="switchAuthTab('signup')" style="flex: 1; padding: 9px 12px; border: none; border-radius: 8px; font-weight: 600; font-size: 0.88rem; cursor: pointer; background: transparent; color: #64748b; transition: all 0.2s ease;">
+          Create Account
+        </button>
+      </div>
+
+      <!-- SIGN IN FORM -->
+      <div id="authSignInContainer">
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+          <div style="margin-bottom: 14px;">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 6px;">Faculty / Staff ID</label>
+            <input type="text" id="loginFacultyId" required placeholder="Enter your Faculty ID (e.g. FAC001)" value="" style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-weight: 500;" />
+          </div>
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 6px;">Password</label>
+            <input type="password" id="loginPassword" required placeholder="••••••••" value="" style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+          </div>
+          <button type="submit" id="loginSubmitBtn" class="btn-action" style="margin-top: 4px; padding: 11px; font-size: 0.95rem; font-weight: 700; width: 100%; background: var(--primary); box-shadow: 0 4px 14px rgba(79,70,229,0.35);">
+            Sign In to Portal →
+          </button>
+        </form>
+
+        <div id="loginError" style="color: #ef4444; margin-top: 10px; font-size: 0.85rem; text-align: center; font-weight: 600;"></div>
+
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed #e2e8f0; text-align: center;">
+          <p style="font-size: 0.82rem; color: #64748b;">
+            New user? 
+            <a href="javascript:void(0)" onclick="switchAuthTab('signup')" style="color: var(--primary); font-weight: 700; text-decoration: none; margin-left: 4px;">
+              Create an Account →
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <!-- SIGN UP (REGISTER) FORM -->
+      <div id="authSignUpContainer" style="display: none;">
+        <form id="registerForm" onsubmit="handleRegisterSubmit(event)">
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Full Name</label>
+            <input type="text" id="regFullName" required placeholder="e.g. Dr. Rajesh Kumar" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;" />
+          </div>
+          
+          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <div style="flex: 1;">
+              <label style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Faculty ID</label>
+              <input type="text" id="regFacultyId" required placeholder="e.g. FAC005" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;" />
+            </div>
+            <div style="flex: 1;">
+              <label style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Role</label>
+              <select id="regRole" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                <option value="faculty">Faculty Member</option>
+                <option value="hos">Head of Section (HOS)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Department</label>
+            <select id="regDepartment" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+              <option value="DCME">Computer Engineering (DCME/CSE)</option>
+              <option value="ECE">Electronics & Communication (ECE)</option>
+              <option value="MECH">Mechanical Engineering</option>
+              <option value="CIVIL">Civil Engineering</option>
+              <option value="EEE">Electrical & Electronics (EEE)</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <div style="flex: 1;">
+              <label style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Email</label>
+              <input type="email" id="regEmail" placeholder="faculty@college.edu" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;" />
+            </div>
+            <div style="flex: 1;">
+              <label style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Phone</label>
+              <input type="tel" id="regPhone" placeholder="9876543210" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;" />
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Create Password</label>
+            <input type="password" id="regPassword" required placeholder="Minimum 4 characters" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;" />
+          </div>
+
+          <button type="submit" id="regSubmitBtn" class="btn-action" style="margin-top: 4px; padding: 11px; font-size: 0.95rem; font-weight: 700; width: 100%; background: var(--primary); box-shadow: 0 4px 14px rgba(79,70,229,0.35);">
+            ✨ Create Account & Sign In
+          </button>
+        </form>
+
+        <div id="regError" style="color: #ef4444; margin-top: 10px; font-size: 0.85rem; text-align: center; font-weight: 600;"></div>
+      </div>
+
     </div>
   </div>
 
@@ -449,8 +686,7 @@
       <span id="user-profile">
         Loading...
       </span>
-      <button id="logoutBtn" onclick="logout()"
-        style="width: auto; padding: 6px 14px; font-size: 0.8rem; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; display: none;">
+      <button id="logoutBtn" onclick="logout()" style="width: auto; padding: 6px 14px; font-size: 0.8rem; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; display: none;">
         Logout
       </button>
     </div>
@@ -465,12 +701,35 @@
 
     <section id="timetable" class="tab-content active">
 
+      <!-- Quick Upload & Auto-Generate Banner -->
+      <div class="card" style="background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%); border: 1.5px dashed var(--primary); padding: 14px 18px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="background: white; width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 2px 6px rgba(79,70,229,0.15);">
+              📁
+            </div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: #1e1b4b;">Auto-Generate Timetable from Uploaded File</div>
+              <div style="font-size: 0.78rem; color: #4f46e5; margin-top: 2px;">
+                Upload <strong>Excel (.xlsx, .xls)</strong>, <strong>CSV (.csv)</strong>, <strong>PDF (.pdf)</strong>, or <strong>Photo (.png, .jpg)</strong> to instantly generate the table!
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="file" id="quickTimetableFileInput" accept=".xlsx,.xls,.csv,.pdf,image/*" style="display: none;" onchange="handleDirectFileUpload(this)" />
+            <button type="button" onclick="document.getElementById('quickTimetableFileInput').click()" class="btn-action" style="margin-top: 0; width: auto; padding: 9px 18px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(79,70,229,0.25);">
+              <span>⚡</span> Upload & Generate Table
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
 
         <h3>Weekly Schedule (Editable Shortcuts)</h3>
 
         <p style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">
-          Use shortcuts (e.g., CS = Computer Sci, MAT = Maths).
+          Use shortcuts (e.g., CS = Computer Sci, MAT = Maths). Click any subject cell to view class and teacher details.
         </p>
 
         <div style="overflow-x:auto;">
@@ -483,7 +742,7 @@
                 <th>P1<br><small>08:00–08:45</small></th>
                 <th>P2<br><small>08:45–09:30</small></th>
                 <th>P3<br><small>09:30–10:15</small></th>
-                <th style="background:#fef9c3; color:#92400e;">☕ Break<br><small>10:15–10:30</small></th>
+                <th style="background:#fef9c3; color:#92400e;">&#x2615; Break<br><small>10:15–10:30</small></th>
                 <th>P4<br><small>10:30–11:15</small></th>
                 <th>P5<br><small>11:15–12:00</small></th>
                 <th>P6<br><small>12:00–12:45</small></th>
@@ -605,31 +864,208 @@
     </section>
 
 
-    <!-- ================= TAB 3: OCR ================= -->
+    <!-- ================= TAB 3: IMPORT & SCAN ================= -->
 
     <section id="scan" class="tab-content">
 
       <div class="card">
 
-        <h3>Scan Paper Timetable Sheet</h3>
+        <h3>Import Timetable (Excel, CSV, PDF, Photo & Quick Paste)</h3>
 
-        <p style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">
-          Upload a picture of your paper timetable to automatically import it.
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:14px;">
+          Upload any file to automatically generate the table: <strong>Excel (.xlsx, .xls)</strong>, <strong>CSV (.csv)</strong>, <strong>PDF (.pdf)</strong>, or a <strong>photo of paper timetable</strong>.
         </p>
 
+        <!-- Mode Selector Buttons -->
+        <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
+          <button type="button" id="tabModeFile" onclick="setImportMode('file')" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; border: none; cursor: pointer; background: var(--primary); color: white;">
+            📁 Upload File (Excel / CSV / PDF / Photo)
+          </button>
+          <button type="button" id="tabModePaste" onclick="setImportMode('paste')" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; border: 1px solid var(--border); cursor: pointer; background: white; color: #475569;">
+            📋 Quick Paste from Clipboard
+          </button>
+          <button type="button" id="tabModePreset" onclick="setImportMode('preset')" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; border: 1px solid var(--border); cursor: pointer; background: white; color: #475569;">
+            ⚡ 1-Click Department Presets
+          </button>
+        </div>
 
-        <input type="file" id="imageInput" accept="image/*" />
+        <!-- Mode 3: Department Presets -->
+        <div id="importPresetContainer" style="display: none; padding: 14px; background: #f8fafc; border: 1.5px solid var(--border); border-radius: 8px; margin-bottom: 14px;">
+          <div style="font-weight: 700; color: #334155; margin-bottom: 8px; font-size: 0.9rem;">
+            ⚡ Select a Department Timetable Template (100% Instant & Accurate):
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" onclick="loadDepartmentPreset('aditya_dcme_v')" style="padding: 8px 14px; background: #4338ca; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+              🏫 Aditya DCME (V Sem - C23)
+            </button>
+            <button type="button" onclick="loadDepartmentPreset('cse_core')" style="padding: 8px 14px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+              💻 CSE Core Timetable
+            </button>
+            <button type="button" onclick="loadDepartmentPreset('ece_core')" style="padding: 8px 14px; background: #0d9488; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+              📡 ECE / EEE Timetable
+            </button>
+            <button type="button" onclick="loadDepartmentPreset('mech_civil')" style="padding: 8px 14px; background: #ea580c; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+              ⚙️ Mechanical / Civil
+            </button>
+          </div>
+        </div>
 
+        <!-- Mode 1: File Upload (Excel, CSV, PDF, Images) -->
+        <div id="importFileContainer">
+          <div class="ocr-drop-zone" id="ocrDropZone" onclick="document.getElementById('imageInput').click()">
+            <div style="font-size: 2.2rem; margin-bottom: 6px;">📊📄📸</div>
+            <div style="font-weight: 700; color: var(--primary); font-size: 0.95rem;">Click to browse or drop timetable file</div>
+            <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">
+              Supports <strong>Excel (.xlsx, .xls)</strong>, <strong>CSV (.csv)</strong>, <strong>PDF (.pdf)</strong>, and <strong>Photos (.png, .jpg, .jpeg, .webp)</strong> — automatically generates the table upon upload!
+            </div>
+          </div>
 
-        <button onclick="processImage()" class="btn-action">
-          Extract Schedule
-        </button>
+          <input type="file" id="imageInput" accept=".xlsx,.xls,.csv,.pdf,image/*" style="display: none;" onchange="handleDirectFileUpload(this)" />
 
+          <!-- File / Image Preview Card -->
+          <div id="imagePreviewContainer" class="image-preview-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span id="previewFileName" style="font-size: 0.85rem; font-weight: 600; color: #334155;"></span>
+              <button type="button" onclick="clearSelectedImage()" style="background: none; border: none; color: #ef4444; font-size: 0.85rem; cursor: pointer; font-weight: 600;">✕ Remove</button>
+            </div>
+            <img id="imagePreview" src="" alt="Timetable preview" style="display: none;" />
+            <div id="excelPreviewBadge" style="display: none; padding: 12px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; color: #166534; font-weight: 600; font-size: 0.9rem; text-align: center;">
+              📊 File Loaded & Automatically Generating Timetable Table...
+            </div>
+          </div>
 
-        <div id="ocrStatus"></div>
+          <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #64748b;">
+            <span>🔑 Optional Gemini Key:</span>
+            <input type="password" id="geminiApiKeyInput" placeholder="Paste Gemini API key for high-precision AI OCR (optional)..." 
+                   onchange="localStorage.setItem('gemini_api_key', this.value.trim())" 
+                   style="flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.8rem;" />
+          </div>
 
+          <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+            <button id="extractBtn" onclick="processImage()" class="btn-action" style="margin-top: 0; flex: 1; min-width: 160px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span>⚡</span> Generate Table from File
+            </button>
+            <button id="clearOcrBtn" onclick="resetOCRTab()" class="btn-action" style="margin-top: 0; background: #e2e8f0; color: #475569; width: auto;">
+              Reset
+            </button>
+          </div>
+        </div>
 
-        <pre id="ocrResult"></pre>
+        <!-- Mode 2: Quick Paste Text Box -->
+        <div id="importPasteContainer" style="display: none;">
+          <textarea id="pasteTableInput" rows="7" placeholder="Paste your timetable table here (copied from Excel, Word, PDF, or WhatsApp)&#10;Example:&#10;MON	PYTHON PROG	PYTHON PROG	IM & EP	BD & CC	ANDROID PROG LAB&#10;TUE	BD & CC	IOT	BD & CC	IOT	ANDROID PROG	PYTHON PROG	PROJECT"
+            style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 0.85rem; outline: none; resize: vertical;"></textarea>
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button type="button" onclick="processPastedTable()" class="btn-action" style="margin-top: 0; flex: 1;">
+              ⚡ Import Pasted Timetable
+            </button>
+            <button type="button" onclick="document.getElementById('pasteTableInput').value=''" class="btn-action" style="margin-top: 0; background: #e2e8f0; color: #475569; width: auto;">
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div id="ocrProgressBox" class="ocr-progress-box">
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600;">
+            <span id="ocrStatusText">Generating timetable table...</span>
+            <span id="ocrPercentText">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="ocrProgressBar" class="progress-bar-fill"></div>
+          </div>
+        </div>
+
+        <!-- ================= VALIDATION SUMMARY LAYER ================= -->
+        <div id="validationSummaryContainer" class="validation-summary-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.3rem;">🛡️</span>
+              <div>
+                <h4 style="color: #1e293b; font-size: 1rem; margin-bottom: 2px;">Extraction Validation Summary</h4>
+                <p style="font-size: 0.76rem; color: #64748b;">Automated structural checks performed on uploaded file</p>
+              </div>
+            </div>
+            <div id="validationStatusBadge" class="stat-pill stat-pill-success">
+              ✓ Validation Passed
+            </div>
+          </div>
+
+          <!-- Metric Stat Pills -->
+          <div id="validationPillsRow" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+            <!-- Injected by JavaScript -->
+          </div>
+
+          <!-- Validation Check Details Breakdown -->
+          <div id="validationChecklist" style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 0.8rem; line-height: 1.6;">
+            <!-- Injected by JavaScript -->
+          </div>
+        </div>
+
+        <!-- ================= EXTRACTED SCHEDULE GRID PREVIEW ================= -->
+        <div id="extractedGridContainer" class="extracted-grid-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <h4 style="color: var(--primary); font-size: 1.05rem; margin-bottom: 2px;">📅 Generated Timetable Preview</h4>
+              <p style="font-size: 0.78rem; color: #64748b;">
+                Review and make live corrections below. <strong>Master Timetable is NOT changed until you click "Apply to Master Timetable".</strong>
+              </p>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <span style="background: #e0e7ff; color: #4338ca; padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
+                ✏️ Live Editable
+              </span>
+              <span id="previewChangesBadge" style="display: none; background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
+                ⚡ Modified Draft
+              </span>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="min-width: 90px;">Day</th>
+                  <th>P1<br><small>08:00–08:45</small></th>
+                  <th>P2<br><small>08:45–09:30</small></th>
+                  <th>P3<br><small>09:30–10:15</small></th>
+                  <th style="background:#fef9c3; color:#92400e; min-width: 60px;">☕ Break<br><small>10:15–10:30</small></th>
+                  <th>P4<br><small>10:30–11:15</small></th>
+                  <th>P5<br><small>11:15–12:00</small></th>
+                  <th>P6<br><small>12:00–12:45</small></th>
+                  <th>P7<br><small>12:45–13:30</small></th>
+                </tr>
+              </thead>
+              <tbody id="extractedTimetableBody">
+                <!-- Extracted grid rows dynamically injected here -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Extracted Grid Actions -->
+          <div style="display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;">
+            <button type="button" onclick="applyExtractedToMasterSchedule()" class="btn-action" style="margin-top: 0; background: #16a34a; flex: 2; min-width: 200px; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(22,163,74,0.25);">
+              <span>💾</span> <strong>Apply to Master Timetable</strong>
+            </button>
+            <button type="button" onclick="savePreviewDraft()" class="btn-action" style="margin-top: 0; background: var(--primary); flex: 1; min-width: 150px;">
+              ✏️ Save Preview Changes
+            </button>
+            <button type="button" onclick="copyExtractedSchedule()" class="btn-action" style="margin-top: 0; background: #64748b; width: auto;">
+              📋 Copy Data
+            </button>
+            <button type="button" onclick="resetOCRTab()" class="btn-action" style="margin-top: 0; background: #e2e8f0; color: #475569; width: auto;">
+              🗑️ Reset Preview
+            </button>
+          </div>
+        </div>
+
+        <!-- Raw Text Accordion -->
+        <details id="rawOcrDetails" style="margin-top: 16px; font-size: 0.85rem; color: #64748b; display: none;">
+          <summary style="cursor: pointer; font-weight: 600; padding: 6px 0; color: #475569;">
+            🔍 View Raw Document Output
+          </summary>
+          <pre id="ocrResult"></pre>
+        </details>
 
       </div>
 
@@ -645,14 +1081,19 @@
         <h3>Absence Tracker</h3>
 
 
-        <div class="grid" style="margin-bottom:12px;">
+        <div
+          class="grid"
+          style="margin-bottom:12px;"
+        >
 
-          <div style="
+          <div
+            style="
               background:#fef2f2;
               padding:12px;
               border-radius:8px;
               text-align:center;
-            ">
+            "
+          >
 
             <h4 style="color:#b91c1c;">
               2 Days
@@ -665,12 +1106,14 @@
           </div>
 
 
-          <div style="
+          <div
+            style="
               background:#f0fdf4;
               padding:12px;
               border-radius:8px;
               text-align:center;
-            ">
+            "
+          >
 
             <h4 style="color:#15803d;">
               94%
@@ -734,8 +1177,6 @@
   </main>
 
 
-  <script src="js/app.js"></script>
-
+  <script src="/public/js/app.js?v=2.6"></script>
 </body>
-
 </html>

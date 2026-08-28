@@ -1,7 +1,7 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
-const db = require('./database/database'); // Initializes DB
+const db = require('./database/database'); // In-Memory Temporary Database Engine
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,7 +9,11 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static assets from both /public and root so all path formats work
+app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 // Session Configuration
 app.use(session({
@@ -30,10 +34,22 @@ app.use('/api/substitutions', substitutionsRoutes);
 
 // Fallback to serve index.html for unknown routes (SPA like behavior)
 app.get('*', (req, res) => {
+    // If requesting demo_2.html specifically
+    if (req.path.includes('demo_2')) {
+        return res.sendFile(path.join(__dirname, 'demo_2.html'));
+    }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start Server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.log(`Port ${PORT} is currently busy. Reconnecting...`);
+    } else {
+        console.error('Server error:', err);
+    }
 });

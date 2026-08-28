@@ -3,6 +3,7 @@
     "server.js",
     "routes",
     "middleware",
+    "database",
     "public"
   ],
   "ext": "js,html,css,json",
