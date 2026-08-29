@@ -10,10 +10,20 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static assets from both /public and root so all path formats work
-app.use('/public', express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(__dirname));
+// Explicit Public Landing / Home page routes
+app.get(['/', '/home', '/home.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'home.html'));
+});
+
+// Existing Login / Dashboard / App routes
+app.get(['/login', '/dashboard', '/app', '/portal'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Serve static assets
+app.use('/public', express.static(path.join(__dirname, 'public'), { index: false }));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+app.use(express.static(__dirname, { index: false }));
 
 // Session Configuration
 app.use(session({
@@ -34,9 +44,13 @@ app.use('/api/substitutions', substitutionsRoutes);
 
 // Fallback to serve index.html for unknown routes (SPA like behavior)
 app.get('*', (req, res) => {
-    // If requesting demo_2.html specifically
+    // If requesting demo_2 specifically
     if (req.path.includes('demo_2')) {
         return res.sendFile(path.join(__dirname, 'demo_2.html'));
+    }
+    // If requesting root or home
+    if (req.path === '/' || req.path === '/home') {
+        return res.sendFile(path.join(__dirname, 'public', 'home.html'));
     }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

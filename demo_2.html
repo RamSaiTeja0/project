@@ -16,6 +16,14 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <!-- SheetJS for Instant Excel / CSV Timetable Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Dedicated Home Section Stylesheet -->
+  <link rel="stylesheet" href="/public/css/home.css" />
+  <link rel="stylesheet" href="/css/home.css" />
 
   <style>
     :root {
@@ -89,7 +97,7 @@
     /* Sidebar title */
 
     nav::before {
-      content: "Faculty Scheduler";
+      content: "TecSubtitution";
       display: block;
 
       color: var(--primary);
@@ -554,7 +562,7 @@
         <div style="display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); color: white; font-size: 1.7rem; margin-bottom: 10px; box-shadow: 0 6px 16px rgba(79,70,229,0.35);">
           🎓
         </div>
-        <h2 style="color: #1e1b4b; font-size: 1.45rem; font-weight: 800; margin-bottom: 4px;">Faculty Scheduler</h2>
+        <h2 style="color: #1e1b4b; font-size: 1.45rem; font-weight: 800; margin-bottom: 4px;">TecSubtitution</h2>
         <p style="color: #64748b; font-size: 0.82rem;">Sign in to access your timetable & duty portal</p>
       </div>
 
@@ -659,20 +667,29 @@
   <!-- ================= LEFT NAVIGATION ================= -->
 
   <nav>
-    <button class="active" onclick="switchTab('timetable', this)">
-      My Schedule
+    <button class="active" onclick="switchTab('home-section', this)" style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 1.05rem;">⚡</span>
+      <span>Home</span>
     </button>
 
-    <button onclick="switchTab('substitute', this)">
-      Adjust/Substitute
+    <button onclick="switchTab('timetable', this)" style="display: flex; align-items: center; gap: 8px;">
+      <span>📅</span>
+      <span>My Schedule</span>
     </button>
 
-    <button onclick="switchTab('scan', this)">
-      Upload Paper Sheet
+    <button onclick="switchTab('substitute', this)" style="display: flex; align-items: center; gap: 8px;">
+      <span>🔄</span>
+      <span>Adjust/Substitute</span>
     </button>
 
-    <button onclick="switchTab('attendance', this)">
-      Attendance Track
+    <button onclick="switchTab('scan', this)" style="display: flex; align-items: center; gap: 8px;">
+      <span>📸</span>
+      <span>Upload Paper Sheet</span>
+    </button>
+
+    <button onclick="switchTab('attendance', this)" style="display: flex; align-items: center; gap: 8px;">
+      <span>📊</span>
+      <span>Attendance Track</span>
     </button>
   </nav>
 
@@ -680,7 +697,12 @@
   <!-- ================= HEADER ================= -->
 
   <header>
-    <h1>Faculty Scheduler</h1>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(99,102,241,0.3);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 3h5v5"></path><path d="M4 20L21 3"></path></svg>
+      </div>
+      <h1>TecSubstitution</h1>
+    </div>
 
     <div style="display: flex; align-items: center; gap: 12px;">
       <span id="user-profile">
@@ -697,9 +719,312 @@
 
   <main>
 
+    <!-- ================= TAB 0: HOME / LANDING SECTION ================= -->
+    <section id="home-section" class="tab-content active" style="margin-bottom: 24px;">
+      <div class="home-landing-wrapper">
+
+        <!-- Home Mini Navbar -->
+        <nav class="home-navbar">
+          <div class="home-brand">
+            <div class="home-brand-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 3h5v5"></path>
+                <path d="M4 20L21 3"></path>
+                <path d="M21 16v5h-5"></path>
+                <path d="M15 15l6 6"></path>
+                <path d="M4 4l5 5"></path>
+              </svg>
+            </div>
+            <span>TecSubstitution</span>
+          </div>
+
+          <ul class="home-nav-links">
+            <li><a href="javascript:void(0)" onclick="document.getElementById('home-section').scrollIntoView({behavior:'smooth'})" class="home-nav-link">Home</a></li>
+            <li><a href="javascript:void(0)" onclick="document.getElementById('tec-features').scrollIntoView({behavior:'smooth'})" class="home-nav-link">Features</a></li>
+            <li><a href="javascript:void(0)" onclick="document.getElementById('tec-how-it-works').scrollIntoView({behavior:'smooth'})" class="home-nav-link">How It Works</a></li>
+            <li><a href="javascript:void(0)" onclick="document.getElementById('tec-about').scrollIntoView({behavior:'smooth'})" class="home-nav-link">About</a></li>
+          </ul>
+
+          <div class="home-nav-actions">
+            <button type="button" onclick="showLoginOverlay(); switchAuthTab('signin');" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.84rem;">Sign In</button>
+            <button type="button" onclick="showLoginOverlay(); switchAuthTab('signup');" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.84rem;">Create Account</button>
+          </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <div class="hero-section">
+          <div class="home-container">
+            <div class="hero-grid">
+              
+              <!-- Left Hero Content -->
+              <div class="hero-content">
+                <div class="badge">
+                  <span class="badge-dot"></span>
+                  SMART TECHNOLOGY SUBSTITUTION
+                </div>
+
+                <h1 class="hero-title">
+                  Find the <span class="brand-gradient-text">Right Alternative</span> for Your Technology
+                </h1>
+
+                <p class="hero-subtitle">
+                  TecSubstitution helps you discover and compare suitable technology alternatives based on your requirements, features, compatibility, cost, and practical needs.
+                </p>
+
+                <div class="hero-cta-group">
+                  <button type="button" onclick="switchTab('substitute', document.querySelector('nav button[onclick*=\'substitute\']'))" class="btn btn-primary" style="font-size: 1rem; padding: 13px 26px;">
+                    <span>Explore Alternatives</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                  </button>
+                  <button type="button" onclick="document.getElementById('tec-how-it-works').scrollIntoView({behavior:'smooth'})" class="btn btn-secondary" style="font-size: 1rem; padding: 13px 22px;">
+                    How It Works
+                  </button>
+                </div>
+              </div>
+
+              <!-- Right Substitution Architecture Visual -->
+              <div class="hero-graphic-card">
+                <div class="graphic-header">
+                  <div class="graphic-header-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Substitution Architecture
+                  </div>
+                  <span class="pill-tag pill-tag-yellow">Workflow</span>
+                </div>
+
+                <div class="graphic-step-box">
+                  <div class="graphic-step-label label-current">CURRENT TECHNOLOGY</div>
+                  <div class="graphic-step-title">
+                    <span>Existing Solution Stack</span>
+                    <span class="pill-tag pill-tag-red">Current</span>
+                  </div>
+                  <p class="graphic-step-desc">Identifies existing technology limitations, dependencies, and bottlenecks.</p>
+                </div>
+
+                <div class="graphic-connector">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                </div>
+
+                <div class="graphic-step-box" style="border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.03);">
+                  <div class="graphic-step-label label-analysis">REQUIREMENT ANALYSIS</div>
+                  <div class="graphic-step-title">
+                    <span>Needs &amp; Constraints Evaluation</span>
+                    <span class="pill-tag pill-tag-yellow">Analysis</span>
+                  </div>
+                  <p class="graphic-step-desc">Evaluates performance, features, compatibility, scale, and budget goals.</p>
+                </div>
+
+                <div class="graphic-connector">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                </div>
+
+                <div class="graphic-step-box" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.04);">
+                  <div class="graphic-step-label label-better">ALTERNATIVE TECHNOLOGIES</div>
+                  <div class="graphic-step-title">
+                    <span>Optimized Replacements</span>
+                    <span class="pill-tag pill-tag-green">Recommended</span>
+                  </div>
+                  <p class="graphic-step-desc">Ranked, suitable alternatives matching your operational requirements.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features-section" id="tec-features">
+          <div class="home-container">
+            <div class="section-header">
+              <span class="section-tag">Core Features</span>
+              <h2 class="section-title">Everything You Need to Find Better Alternatives</h2>
+              <p class="section-desc">
+                Powerful capabilities designed to simplify technology discovery, comparison, and substitution.
+              </p>
+            </div>
+
+            <div class="features-grid">
+              <div class="feature-card">
+                <div class="feature-icon-box">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </div>
+                <h3 class="feature-title">Smart Substitution</h3>
+                <p class="feature-desc">Discover suitable alternatives for existing technologies.</p>
+              </div>
+
+              <div class="feature-card">
+                <div class="feature-icon-box" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.25); background: rgba(56, 189, 248, 0.1);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <h3 class="feature-title">Requirement Matching</h3>
+                <p class="feature-desc">Find alternatives according to specific requirements.</p>
+              </div>
+
+              <div class="feature-card">
+                <div class="feature-icon-box" style="color: #a855f7; border-color: rgba(168, 85, 247, 0.25); background: rgba(168, 85, 247, 0.1);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                </div>
+                <h3 class="feature-title">Technology Comparison</h3>
+                <p class="feature-desc">Compare technologies and understand their differences.</p>
+              </div>
+
+              <div class="feature-card">
+                <div class="feature-icon-box" style="color: #10b981; border-color: rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.1);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+                <h3 class="feature-title">Compatibility</h3>
+                <p class="feature-desc">Evaluate whether alternatives fit your technical requirements.</p>
+              </div>
+
+              <div class="feature-card">
+                <div class="feature-icon-box" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); background: rgba(245, 158, 11, 0.1);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+                <h3 class="feature-title">Cost Awareness</h3>
+                <p class="feature-desc">Consider cost while evaluating alternative solutions.</p>
+              </div>
+
+              <div class="feature-card">
+                <div class="feature-icon-box" style="color: #ec4899; border-color: rgba(236, 72, 153, 0.25); background: rgba(236, 72, 153, 0.1);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                </div>
+                <h3 class="feature-title">Intelligent Recommendations</h3>
+                <p class="feature-desc">Get meaningful technology suggestions.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <div class="how-it-works-section" id="tec-how-it-works">
+          <div class="home-container">
+            <div class="section-header">
+              <span class="section-tag">Step-by-Step</span>
+              <h2 class="section-title">How TecSubstitution Works</h2>
+              <p class="section-desc">
+                Four simple steps from requirement definition to ideal technology adoption.
+              </p>
+            </div>
+
+            <div class="steps-grid">
+              <div class="step-card">
+                <span class="step-number">01</span>
+                <h3 class="step-title">Enter Your Requirement</h3>
+                <p class="step-desc">Provide the technology or solution you want to replace.</p>
+              </div>
+
+              <div class="step-card">
+                <span class="step-number">02</span>
+                <h3 class="step-title">Analyze</h3>
+                <p class="step-desc">The system analyzes your requirements.</p>
+              </div>
+
+              <div class="step-card">
+                <span class="step-number">03</span>
+                <h3 class="step-title">Discover Alternatives</h3>
+                <p class="step-desc">Suitable alternatives are identified.</p>
+              </div>
+
+              <div class="step-card">
+                <span class="step-number">04</span>
+                <h3 class="step-title">Compare &amp; Choose</h3>
+                <p class="step-desc">Compare the alternatives and choose the one that best fits your needs.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Why TecSubstitution Section -->
+        <div class="purpose-section" id="tec-about">
+          <div class="home-container">
+            <div class="purpose-container">
+              <div class="purpose-intro">
+                <span class="section-tag">Project Purpose</span>
+                <h2 class="section-title">Making Technology Choices Simpler</h2>
+                <p class="purpose-quote">
+                  “Technology is constantly evolving, and finding the right replacement for an existing solution can require significant time and research. TecSubstitution aims to simplify this process by helping users discover relevant alternatives according to their needs.”
+                </p>
+              </div>
+
+              <div class="highlights-grid">
+                <div class="highlight-card">
+                  <div class="highlight-icon">🔍</div>
+                  <h3 class="highlight-title">DISCOVER</h3>
+                  <p class="highlight-text">Find relevant alternatives faster.</p>
+                </div>
+
+                <div class="highlight-card">
+                  <div class="highlight-icon">⚖️</div>
+                  <h3 class="highlight-title">COMPARE</h3>
+                  <p class="highlight-text">Understand important differences.</p>
+                </div>
+
+                <div class="highlight-card">
+                  <div class="highlight-icon">🎯</div>
+                  <h3 class="highlight-title">CHOOSE</h3>
+                  <p class="highlight-text">Select the solution that best fits your requirements.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Final CTA Section -->
+        <div class="cta-section">
+          <div class="home-container">
+            <div class="cta-card">
+              <h2 class="cta-title">Ready to Explore Better Technology Alternatives?</h2>
+              <p class="cta-desc">Start discovering smarter technology choices with TecSubstitution.</p>
+              
+              <div class="cta-buttons-group">
+                <button type="button" onclick="showLoginOverlay(); switchAuthTab('signin');" class="btn btn-secondary cta-btn-signin">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                  <span>SIGN IN</span>
+                </button>
+                <button type="button" onclick="showLoginOverlay(); switchAuthTab('signup');" class="btn btn-primary cta-btn-create">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7.5" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                  <span>CREATE ACCOUNT</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Home Footer -->
+        <footer class="home-footer">
+          <div class="home-container">
+            <div class="footer-top">
+              <div class="footer-brand">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 3h5v5"></path><path d="M4 20L21 3"></path></svg>
+                  </div>
+                  <h3>TecSubstitution</h3>
+                </div>
+                <p class="footer-tagline">“Smarter technology choices, simplified.”</p>
+              </div>
+
+              <ul class="footer-nav">
+                <li><a href="javascript:void(0)" onclick="document.getElementById('home-section').scrollIntoView({behavior:'smooth'})" class="footer-link">Home</a></li>
+                <li><a href="javascript:void(0)" onclick="document.getElementById('tec-features').scrollIntoView({behavior:'smooth'})" class="footer-link">Features</a></li>
+                <li><a href="javascript:void(0)" onclick="document.getElementById('tec-how-it-works').scrollIntoView({behavior:'smooth'})" class="footer-link">How It Works</a></li>
+                <li><a href="javascript:void(0)" onclick="document.getElementById('tec-about').scrollIntoView({behavior:'smooth'})" class="footer-link">About</a></li>
+              </ul>
+            </div>
+
+            <div class="footer-bottom">
+              <p>&copy; 2026 TecSubstitution. All rights reserved.</p>
+              <p>Smarter technology choices, simplified.</p>
+            </div>
+          </div>
+        </footer>
+
+      </div>
+    </section>
+
     <!-- ================= TAB 1: TIMETABLE ================= -->
 
-    <section id="timetable" class="tab-content active">
+    <section id="timetable" class="tab-content">
 
       <!-- Quick Upload & Auto-Generate Banner -->
       <div class="card" style="background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%); border: 1.5px dashed var(--primary); padding: 14px 18px; margin-bottom: 16px;">
@@ -895,6 +1220,9 @@
             ⚡ Select a Department Timetable Template (100% Instant & Accurate):
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" onclick="loadDepartmentPreset('kannur_bed')" style="padding: 8px 14px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+              🏫 Kannur Salafi B.Ed (6 Periods + Breaks)
+            </button>
             <button type="button" onclick="loadDepartmentPreset('aditya_dcme_v')" style="padding: 8px 14px; background: #4338ca; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
               🏫 Aditya DCME (V Sem - C23)
             </button>
@@ -1059,13 +1387,46 @@
           </div>
         </div>
 
-        <!-- Raw Text Accordion -->
-        <details id="rawOcrDetails" style="margin-top: 16px; font-size: 0.85rem; color: #64748b; display: none;">
-          <summary style="cursor: pointer; font-weight: 600; padding: 6px 0; color: #475569;">
-            🔍 View Raw Document Output
-          </summary>
-          <pre id="ocrResult"></pre>
-        </details>
+        <!-- Developer Debugging Views (A: Visual Grid Overlay, B: Raw OCR/AI, C: Normalized Matrix) -->
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+          <!-- View A: Visual Grid Overlay Canvas -->
+          <details id="visualGridOverlayDetails" style="font-size: 0.85rem; color: #64748b; display: none; background: #f8fafc; border: 1.5px solid #6366f1; border-radius: 8px; padding: 10px 14px;">
+            <summary style="cursor: pointer; font-weight: 700; color: #4338ca; user-select: none; font-size: 0.92rem;">
+              🗺️ Debug View A: Visual Grid Overlay (Table Geometry, Columns & Mapped Cells)
+            </summary>
+            <div style="margin-top: 10px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center;">
+                <span style="font-size: 0.78rem; font-weight: 600; color: #334155;">Overlay Layers:</span>
+                <button type="button" onclick="toggleOverlayLayer('all')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #4338ca; color: white; border: none; cursor: pointer; font-weight: 600;">All Layers</button>
+                <button type="button" onclick="toggleOverlayLayer('columns')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #0284c7; color: white; border: none; cursor: pointer; font-weight: 600;">🔵 Columns</button>
+                <button type="button" onclick="toggleOverlayLayer('rows')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #16a34a; color: white; border: none; cursor: pointer; font-weight: 600;">🟢 Day Rows</button>
+                <button type="button" onclick="toggleOverlayLayer('cells')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #8b5cf6; color: white; border: none; cursor: pointer; font-weight: 600;">🟣 Mapped Cells</button>
+                <button type="button" onclick="toggleOverlayLayer('breaks')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #eab308; color: black; border: none; cursor: pointer; font-weight: 600;">🟡 Breaks / Assembly</button>
+              </div>
+              <div style="overflow-x: auto; background: #0f172a; border-radius: 6px; padding: 10px; text-align: center;">
+                <canvas id="gridOverlayCanvas" style="max-width: 100%; height: auto; border: 1px solid #334155; border-radius: 4px; background: #1e293b;"></canvas>
+              </div>
+            </div>
+          </details>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px;">
+            <!-- View B: Raw Extraction -->
+            <details id="rawOcrDetails" style="font-size: 0.85rem; color: #64748b; display: none; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;">
+              <summary style="cursor: pointer; font-weight: 700; color: #334155; user-select: none;">
+                🔍 Debug View B: Raw Document Extraction (OCR / AI JSON)
+              </summary>
+              <pre id="ocrResult" style="margin-top: 8px; white-space: pre-wrap; font-family: monospace; font-size: 0.78rem; background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 6px; max-height: 280px; overflow-y: auto;"></pre>
+            </details>
+
+            <!-- View C: Normalized Timetable -->
+            <details id="normalizedDetails" style="font-size: 0.85rem; color: #64748b; display: none; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;">
+              <summary style="cursor: pointer; font-weight: 700; color: #334155; user-select: none;">
+                📊 Debug View C: Normalized Timetable (Day × Period Matrix)
+              </summary>
+              <pre id="normalizedResult" style="margin-top: 8px; white-space: pre-wrap; font-family: monospace; font-size: 0.78rem; background: #0f172a; color: #38bdf8; padding: 12px; border-radius: 6px; max-height: 280px; overflow-y: auto;"></pre>
+            </details>
+          </div>
+        </div>
 
       </div>
 

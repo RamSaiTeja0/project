@@ -1,17 +1,17 @@
 {
   "watch": [
     "server.js",
-    "routes",
-    "middleware",
-    "database",
-    "public"
+    "routes/",
+    "middleware/",
+    "database/",
+    "public/"
   ],
   "ext": "js,html,css,json",
   "ignore": [
-    "database/*.db*",
-    "database/*.sqlite*",
-    "node_modules",
-    "uploads",
-    ".git"
-  ]
+    "tests/*",
+    "*.log",
+    ".git/*",
+    "node_modules/*"
+  ],
+  "delay": "500"
 }

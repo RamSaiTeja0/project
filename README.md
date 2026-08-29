@@ -1,6 +1,6 @@
-# Interactive College Faculty Duty & Substitute Scheduler
+# TecSubtitution — Smart Faculty Timetable & Substitution Management
 
-A full-stack Node.js/Express college web application that solves the problem of finding free substitute faculty for a given timetable period, with 100% dynamic timetable generation from uploaded files.
+A full-stack Node.js/Express college web application that simplifies academic scheduling, faculty substitutions, timetable management, and AI-assisted timetable digitization.
 
 ## Features
 - **100% Dynamic Timetable Table Generation**:

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Faculty Duty & Substitute Scheduler</title>
+  <title>TecSubtitution - Smart Faculty Timetable & Substitution Management</title>
 
   <!-- PDF.js for Instant PDF Timetable Import -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -89,7 +89,7 @@
     /* Sidebar title */
 
     nav::before {
-      content: "Faculty Scheduler";
+      content: "TecSubtitution";
       display: block;
 
       color: var(--primary);
@@ -554,7 +554,7 @@
         <div style="display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); color: white; font-size: 1.7rem; margin-bottom: 10px; box-shadow: 0 6px 16px rgba(79,70,229,0.35);">
           🎓
         </div>
-        <h2 style="color: #1e1b4b; font-size: 1.45rem; font-weight: 800; margin-bottom: 4px;">Faculty Scheduler</h2>
+        <h2 style="color: #1e1b4b; font-size: 1.45rem; font-weight: 800; margin-bottom: 4px;">TecSubtitution</h2>
         <p style="color: #64748b; font-size: 0.82rem;">Sign in to access your timetable & duty portal</p>
       </div>
 
@@ -680,7 +680,12 @@
   <!-- ================= HEADER ================= -->
 
   <header>
-    <h1>Faculty Scheduler</h1>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="/" style="text-decoration: none; display: flex; align-items: center; gap: 6px; background: #eef2ff; color: var(--primary); padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: 1px solid #c7d2fe;">
+        <span>←</span> Home
+      </a>
+      <h1 style="margin: 0; font-size: 1.25rem;">TecSubtitution</h1>
+    </div>
 
     <div style="display: flex; align-items: center; gap: 12px;">
       <span id="user-profile">
@@ -895,6 +900,9 @@
             ⚡ Select a Department Timetable Template (100% Instant & Accurate):
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" onclick="loadDepartmentPreset('kannur_bed')" style="padding: 8px 14px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+              🏫 Kannur Salafi B.Ed (6 Periods + Breaks)
+            </button>
             <button type="button" onclick="loadDepartmentPreset('aditya_dcme_v')" style="padding: 8px 14px; background: #4338ca; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
               🏫 Aditya DCME (V Sem - C23)
             </button>
@@ -1059,13 +1067,46 @@
           </div>
         </div>
 
-        <!-- Raw Text Accordion -->
-        <details id="rawOcrDetails" style="margin-top: 16px; font-size: 0.85rem; color: #64748b; display: none;">
-          <summary style="cursor: pointer; font-weight: 600; padding: 6px 0; color: #475569;">
-            🔍 View Raw Document Output
-          </summary>
-          <pre id="ocrResult"></pre>
-        </details>
+        <!-- Developer Debugging Views (A: Visual Grid Overlay, B: Raw OCR/AI, C: Normalized Matrix) -->
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+          <!-- View A: Visual Grid Overlay Canvas -->
+          <details id="visualGridOverlayDetails" style="font-size: 0.85rem; color: #64748b; display: none; background: #f8fafc; border: 1.5px solid #6366f1; border-radius: 8px; padding: 10px 14px;">
+            <summary style="cursor: pointer; font-weight: 700; color: #4338ca; user-select: none; font-size: 0.92rem;">
+              🗺️ Debug View A: Visual Grid Overlay (Table Geometry, Columns & Mapped Cells)
+            </summary>
+            <div style="margin-top: 10px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center;">
+                <span style="font-size: 0.78rem; font-weight: 600; color: #334155;">Overlay Layers:</span>
+                <button type="button" onclick="toggleOverlayLayer('all')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #4338ca; color: white; border: none; cursor: pointer; font-weight: 600;">All Layers</button>
+                <button type="button" onclick="toggleOverlayLayer('columns')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #0284c7; color: white; border: none; cursor: pointer; font-weight: 600;">🔵 Columns</button>
+                <button type="button" onclick="toggleOverlayLayer('rows')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #16a34a; color: white; border: none; cursor: pointer; font-weight: 600;">🟢 Day Rows</button>
+                <button type="button" onclick="toggleOverlayLayer('cells')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #8b5cf6; color: white; border: none; cursor: pointer; font-weight: 600;">🟣 Mapped Cells</button>
+                <button type="button" onclick="toggleOverlayLayer('breaks')" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: #eab308; color: black; border: none; cursor: pointer; font-weight: 600;">🟡 Breaks / Assembly</button>
+              </div>
+              <div style="overflow-x: auto; background: #0f172a; border-radius: 6px; padding: 10px; text-align: center;">
+                <canvas id="gridOverlayCanvas" style="max-width: 100%; height: auto; border: 1px solid #334155; border-radius: 4px; background: #1e293b;"></canvas>
+              </div>
+            </div>
+          </details>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px;">
+            <!-- View B: Raw Extraction -->
+            <details id="rawOcrDetails" style="font-size: 0.85rem; color: #64748b; display: none; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;">
+              <summary style="cursor: pointer; font-weight: 700; color: #334155; user-select: none;">
+                🔍 Debug View B: Raw Document Extraction (OCR / AI JSON)
+              </summary>
+              <pre id="ocrResult" style="margin-top: 8px; white-space: pre-wrap; font-family: monospace; font-size: 0.78rem; background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 6px; max-height: 280px; overflow-y: auto;"></pre>
+            </details>
+
+            <!-- View C: Normalized Timetable -->
+            <details id="normalizedDetails" style="font-size: 0.85rem; color: #64748b; display: none; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;">
+              <summary style="cursor: pointer; font-weight: 700; color: #334155; user-select: none;">
+                📊 Debug View C: Normalized Timetable (Day × Period Matrix)
+              </summary>
+              <pre id="normalizedResult" style="margin-top: 8px; white-space: pre-wrap; font-family: monospace; font-size: 0.78rem; background: #0f172a; color: #38bdf8; padding: 12px; border-radius: 6px; max-height: 280px; overflow-y: auto;"></pre>
+            </details>
+          </div>
+        </div>
 
       </div>
 
