@@ -1,0 +1,203 @@
+{
+  "_comment": "Structured timetable source of truth for TecSubstitution. Day 4 real data replaces the contents of `classes` and `faculty`. The store (data/timetableStore.js) normalizes this into flat faculty/day/period records. `spanTo` marks a merged lab cell that occupies periods `period`..`spanTo`.",
+  "meta": {
+    "primaryClass": "CSE-A",
+    "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "periods": [1, 2, 3, 4, 5, 6, 7],
+    "periodTimings": {
+      "1": { "start": "08:00", "end": "08:45" },
+      "2": { "start": "08:45", "end": "09:30" },
+      "3": { "start": "09:30", "end": "10:15" },
+      "4": { "start": "10:30", "end": "11:15" },
+      "5": { "start": "11:15", "end": "12:00" },
+      "6": { "start": "12:00", "end": "12:45" },
+      "7": { "start": "12:45", "end": "13:30" }
+    }
+  },
+
+  "faculty": [
+    { "id": "HOS001", "name": "Dr. Smith",   "department": "CSE" },
+    { "id": "FAC001", "name": "Dr. Ravi",    "department": "CSE" },
+    { "id": "FAC002", "name": "Dr. Anitha",  "department": "CSE" },
+    { "id": "FAC003", "name": "Prof. Kiran", "department": "CSE" },
+    { "id": "FAC004", "name": "Prof. Priya", "department": "CSE" },
+    { "id": "FAC005", "name": "Dr. Suresh",  "department": "CSE" },
+    { "id": "FAC006", "name": "Prof. Arun",  "department": "CSE" },
+    { "id": "FAC007", "name": "Dr. Deepa",   "department": "CSE" },
+    { "id": "FAC008", "name": "Prof. Naveen","department": "CSE" },
+    { "id": "FAC009", "name": "Dr. Latha",   "department": "CSE" }
+  ],
+
+  "classes": [
+    {
+      "class": "CSE-A",
+      "defaultRoom": "Room 101",
+      "rows": {
+        "Monday": [
+          { "period": 1, "subject": "Python Programming", "faculty": "Dr. Ravi" },
+          { "period": 2, "subject": "Python Programming", "faculty": "Dr. Ravi" },
+          { "period": 3, "subject": "Industrial Management & Entrepreneurship", "faculty": "Prof. Priya" },
+          { "period": 4, "subject": "Big Data & Cloud Computing", "faculty": "Dr. Anitha" },
+          { "period": 5, "spanTo": 7, "subject": "Android Programming Lab", "faculty": "Prof. Kiran", "room": "Lab 2" }
+        ],
+        "Tuesday": [
+          { "period": 1, "subject": "Big Data & Cloud Computing", "faculty": "Dr. Anitha" },
+          { "period": 2, "subject": "Internet of Things", "faculty": "Dr. Ravi" },
+          { "period": 3, "subject": "Big Data & Cloud Computing", "faculty": "Dr. Anitha" },
+          { "period": 4, "subject": "Internet of Things", "faculty": "Dr. Ravi" },
+          { "period": 5, "subject": "Android Programming", "faculty": "Prof. Kiran" },
+          { "period": 6, "subject": "Python Programming", "faculty": "Dr. Ravi" },
+          { "period": 7, "subject": "Project Work", "faculty": "Dr. Smith", "room": "Lab 1" }
+        ],
+        "Wednesday": [
+          { "period": 1, "subject": "Big Data & Cloud Computing", "faculty": "Dr. Anitha" },
+          { "period": 2, "subject": "Python Programming", "faculty": "Dr. Ravi" },
+          { "period": 3, "subject": "Android Programming", "faculty": "Prof. Kiran" },
+          { "period": 4, "subject": "Industrial Management & Entrepreneurship", "faculty": "Prof. Priya" },
+          { "period": 5, "spanTo": 7, "subject": "Life Skills Lab", "faculty": "Dr. Smith", "room": "Lab 3" }
+        ],
+        "Thursday": [
+          { "period": 1, "subject": "Industrial Management & Entrepreneurship", "faculty": "Prof. Priya" },
+          { "period": 2, "subject": "Python Programming", "faculty": "Dr. Ravi" },
+          { "period": 3, "subject": "Big Data & Cloud Computing", "faculty": "Dr. Anitha" },
+          { "period": 4, "subject": "Internet of Things", "faculty": "Dr. Ravi" },
+          { "period": 5, "subject": "Android Programming", "faculty": "Prof. Kiran" },
+          { "period": 6, "subject": "Industrial Management & Entrepreneurship", "faculty": "Prof. Priya" },
+          { "period": 7, "subject": "Library & Student Counseling", "faculty": "Dr. Smith", "room": "Library" }
+        ],
+        "Friday": [
+          { "period": 1, "subject": "Big Data & Cloud Computing", "faculty": "Dr. Anitha" },
+          { "period": 2, "subject": "Python Programming", "faculty": "Dr. Ravi" },
+          { "period": 3, "subject": "Android Programming", "faculty": "Prof. Kiran" },
+          { "period": 4, "subject": "Industrial Management & Entrepreneurship", "faculty": "Prof. Priya" },
+          { "period": 5, "subject": "Internet of Things", "faculty": "Dr. Ravi" },
+          { "period": 6, "subject": "Training & Placement Cell", "faculty": "Dr. Smith", "room": "Auditorium" },
+          { "period": 7, "subject": "Project Work", "faculty": "Dr. Smith", "room": "Lab 1" }
+        ],
+        "Saturday": [
+          { "period": 1, "subject": "Internet of Things", "faculty": "Dr. Ravi" },
+          { "period": 2, "subject": "Internet of Things", "faculty": "Dr. Ravi" },
+          { "period": 3, "subject": "Android Programming", "faculty": "Prof. Kiran" },
+          { "period": 4, "subject": "Android Programming", "faculty": "Prof. Kiran" },
+          { "period": 5, "spanTo": 7, "subject": "Python Programming Lab", "faculty": "Dr. Ravi", "room": "Lab 1" }
+        ]
+      }
+    },
+
+    {
+      "class": "CSE-B",
+      "defaultRoom": "Room 102",
+      "rows": {
+        "Monday": [
+          { "period": 1, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 2, "subject": "Industrial Management & Entrepreneurship", "faculty": "Prof. Priya" },
+          { "period": 3, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 4, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 5, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 6, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 7, "subject": "Data Structures", "faculty": "Dr. Latha" }
+        ],
+        "Tuesday": [
+          { "period": 1, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 2, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 3, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 4, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 5, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 6, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 7, "subject": "DBMS", "faculty": "Prof. Arun" }
+        ],
+        "Wednesday": [
+          { "period": 1, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 2, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 3, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 4, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 5, "spanTo": 7, "subject": "DBMS Lab", "faculty": "Prof. Arun", "room": "Lab 4" }
+        ],
+        "Thursday": [
+          { "period": 1, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 2, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 3, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 4, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 5, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 6, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 7, "subject": "Data Structures", "faculty": "Dr. Latha" }
+        ],
+        "Friday": [
+          { "period": 1, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 2, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 3, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 4, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 5, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 6, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 7, "subject": "Operating Systems", "faculty": "Dr. Suresh" }
+        ],
+        "Saturday": [
+          { "period": 1, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 2, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 3, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 4, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 5, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 6, "spanTo": 7, "subject": "Computer Networks Lab", "faculty": "Dr. Deepa", "room": "Lab 4" }
+        ]
+      }
+    },
+
+    {
+      "class": "ECE-A",
+      "defaultRoom": "Room 201",
+      "rows": {
+        "Monday": [
+          { "period": 1, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 2, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 3, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 4, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 5, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 6, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 7, "subject": "Computer Networks", "faculty": "Dr. Deepa" }
+        ],
+        "Tuesday": [
+          { "period": 1, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 2, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 3, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 4, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 5, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 6, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 7, "subject": "Java Programming", "faculty": "Prof. Naveen" }
+        ],
+        "Wednesday": [
+          { "period": 1, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 2, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 3, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 4, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 5, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 6, "spanTo": 7, "subject": "Data Structures Lab", "faculty": "Dr. Latha", "room": "Lab 5" }
+        ],
+        "Thursday": [
+          { "period": 1, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 2, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 3, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 4, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 5, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 6, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 7, "subject": "Java Programming", "faculty": "Prof. Naveen" }
+        ],
+        "Friday": [
+          { "period": 1, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 2, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 3, "subject": "Operating Systems", "faculty": "Dr. Suresh" },
+          { "period": 4, "subject": "DBMS", "faculty": "Prof. Arun" },
+          { "period": 5, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 6, "spanTo": 7, "subject": "Computer Networks Lab", "faculty": "Dr. Deepa", "room": "Lab 5" }
+        ],
+        "Saturday": [
+          { "period": 1, "subject": "Computer Networks", "faculty": "Dr. Deepa" },
+          { "period": 2, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 3, "subject": "Data Structures", "faculty": "Dr. Latha" },
+          { "period": 4, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 5, "subject": "Java Programming", "faculty": "Prof. Naveen" },
+          { "period": 6, "spanTo": 7, "subject": "Data Structures Lab", "faculty": "Dr. Latha", "room": "Lab 5" }
+        ]
+      }
+    }
+  ]
+}

@@ -37,10 +37,13 @@ app.use(session({
 const authRoutes = require('./routes/auth');
 const timetableRoutes = require('./routes/timetable');
 const substitutionsRoutes = require('./routes/substitutions');
+const availabilityRoutes = require('./routes/availability');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/substitutions', substitutionsRoutes);
+// Read-only faculty availability lookup (day + period -> FREE faculty).
+app.use('/api/availability', availabilityRoutes);
 
 // Fallback to serve index.html for unknown routes (SPA like behavior)
 app.get('*', (req, res) => {
