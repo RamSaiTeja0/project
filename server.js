@@ -20,6 +20,11 @@ app.get(['/login', '/dashboard', '/app', '/portal'], (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Primary timetable + faculty availability finder (read-only view)
+app.get(['/tecsubstitution', '/timetable'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'tecsubstitution.html'));
+});
+
 // Serve static assets
 app.use('/public', express.static(path.join(__dirname, 'public'), { index: false }));
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));

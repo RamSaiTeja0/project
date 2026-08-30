@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TecSubstitution — Primary Timetable</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #eef2ff;
+      --secondary-bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-dark: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--secondary-bg);
+      color: var(--text-body);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ---------- header ---------- */
+    .topbar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.95rem;
+    }
+    .brand-name { font-weight: 700; color: var(--text-dark); font-size: 1rem; }
+    .brand-sub { font-size: 0.75rem; color: var(--text-muted); }
+    .topbar-links a {
+      color: var(--text-muted); text-decoration: none;
+      font-size: 0.85rem; font-weight: 600; margin-left: 18px;
+    }
+    .topbar-links a:hover { color: var(--primary); }
+
+    /* ---------- layout ---------- */
+    .page { max-width: 1400px; margin: 0 auto; padding: 22px 24px 40px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+    @media (max-width: 1080px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: 18px 20px;
+    }
+    .card-title { margin: 0 0 2px; font-size: 1.05rem; color: var(--text-dark); font-weight: 700; }
+    .card-hint { margin: 0 0 16px; font-size: 0.82rem; color: var(--text-muted); }
+
+    .class-chip {
+      display: inline-block; background: var(--primary-light); color: var(--primary);
+      border-radius: 9999px; padding: 3px 12px; font-size: 0.78rem; font-weight: 700;
+      margin-left: 8px; vertical-align: middle;
+    }
+
+    /* ---------- timetable grid ---------- */
+    .grid-scroll { overflow-x: auto; }
+    table.timetable { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 900px; }
+    table.timetable th, table.timetable td { border-bottom: 1px solid var(--border-light); }
+    table.timetable thead th {
+      background: var(--secondary-bg); color: var(--text-dark);
+      font-size: 0.78rem; font-weight: 700; text-align: center;
+      padding: 9px 6px; border-bottom: 2px solid var(--border);
+      position: sticky; top: 0; z-index: 1;
+    }
+    table.timetable thead th small { display: block; font-weight: 500; color: var(--text-muted); font-size: 0.68rem; }
+    /* The day column stays visible when the grid scrolls horizontally. */
+    th.day-head {
+      text-align: left; padding-left: 14px; min-width: 108px;
+      background: var(--secondary-bg); font-size: 0.82rem; color: var(--text-dark); font-weight: 700;
+      position: sticky; left: 0; z-index: 2;
+      box-shadow: 1px 0 0 var(--border);
+    }
+    table.timetable thead th.day-head { z-index: 4; }
+
+    td.slot {
+      padding: 0; vertical-align: top;
+      border-left: 1px solid var(--border-light);
+      width: 12.5%;
+    }
+    .slot-btn {
+      display: block; width: 100%; height: 100%;
+      background: none; border: 2px solid transparent; border-radius: var(--radius-sm);
+      padding: 9px 10px; text-align: left; cursor: pointer;
+      font: inherit; color: inherit;
+      transition: background-color 0.12s ease, border-color 0.12s ease;
+    }
+    .slot-btn:hover { background: var(--primary-light); }
+    .slot-btn:focus-visible { outline: none; border-color: var(--primary); }
+    .slot-btn.is-selected {
+      background: var(--primary-light);
+      border-color: var(--primary);
+    }
+    .slot-subject {
+      font-weight: 700; color: var(--text-dark); font-size: 0.82rem;
+      margin-bottom: 2px;
+      overflow-wrap: break-word; hyphens: auto;
+    }
+    .slot-faculty { color: var(--text-body); font-size: 0.78rem; }
+    .slot-room { color: var(--text-muted); font-size: 0.72rem; margin-top: 2px; }
+    .slot-btn.is-free .slot-subject { color: var(--text-muted); font-weight: 600; }
+
+    /* ---------- result panel ---------- */
+    .panel { position: sticky; top: 18px; }
+    .panel-empty { color: var(--text-muted); font-size: 0.85rem; }
+
+    .selected-head {
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 12px; margin-bottom: 12px;
+    }
+    .selected-slot { font-size: 1rem; font-weight: 700; color: var(--text-dark); }
+    .meta-row { display: flex; gap: 8px; font-size: 0.83rem; padding: 3px 0; }
+    .meta-label { color: var(--text-muted); min-width: 62px; }
+    .meta-value { color: var(--text-dark); font-weight: 600; overflow-wrap: break-word; }
+
+    .section-label {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--text-muted);
+      margin: 16px 0 8px;
+    }
+    ul.faculty-list { list-style: none; margin: 0; padding: 0; }
+    ul.faculty-list li {
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 10px; margin-bottom: 5px;
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm);
+      font-size: 0.85rem; font-weight: 600; color: #14532d;
+    }
+    ul.faculty-list li .dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--success); flex: none;
+    }
+
+    .state-msg { font-size: 0.85rem; padding: 10px 12px; border-radius: var(--radius-sm); }
+    .state-loading { color: var(--text-muted); }
+    .state-none { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .state-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+    .btn-retry {
+      margin-top: 10px; background: var(--primary); color: #fff; border: none;
+      border-radius: var(--radius-sm); padding: 7px 14px;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+    .btn-retry:hover { background: var(--primary-hover); }
+
+    .readonly-note {
+      margin-top: 16px; padding-top: 12px;
+      border-top: 1px solid var(--border-light);
+      font-size: 0.75rem; color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">TS</div>
+      <div>
+        <div class="brand-name">TecSubstitution</div>
+        <div class="brand-sub">Faculty availability finder</div>
+      </div>
+    </div>
+    <nav class="topbar-links">
+      <a href="/home">Home</a>
+      <a href="/dashboard">Dashboard</a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <div class="layout">
+
+      <!-- ============ PRIMARY TIMETABLE ============ -->
+      <main class="card">
+        <h2 class="card-title">
+          Primary Timetable<span class="class-chip" id="classChip">—</span>
+        </h2>
+        <p class="card-hint">
+          Click any period to see which faculty are free at that day and period.
+          Nothing is assigned or saved.
+        </p>
+
+        <div class="grid-scroll">
+          <table class="timetable">
+            <thead id="timetableHead"></thead>
+            <tbody id="timetableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="timetableState" class="state-msg state-loading">Loading timetable…</div>
+      </main>
+
+      <!-- ============ AVAILABILITY RESULT ============ -->
+      <aside class="card panel">
+        <h2 class="card-title">Selected Period</h2>
+
+        <div id="resultPanel">
+          <p class="panel-empty" id="panelPlaceholder">
+            Select a period from the timetable to see the available faculty.
+          </p>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <script src="/js/tecsubstitution.js"></script>
+</body>
+</html>
