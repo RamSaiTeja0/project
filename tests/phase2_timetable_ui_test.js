@@ -119,9 +119,12 @@ async function pageTests() {
         ].forEach(forbidden => {
             assert.ok(!script.raw.includes(forbidden), `script must not use ${forbidden}`);
         });
-        // The availability lookup is the only POST/PUT/DELETE the page makes.
+        // The page's only POSTs are the availability lookup and the explicit,
+        // user-confirmed timetable import. Nothing else writes.
         const writeVerbs = script.raw.match(/method:\s*'(POST|PUT|PATCH|DELETE)'/g) || [];
-        assert.strictEqual(writeVerbs.length, 1, `expected 1 POST, found ${writeVerbs.length}`);
+        assert.strictEqual(writeVerbs.length, 2, `expected 2 POSTs, found ${writeVerbs.length}`);
+        assert.ok(script.raw.includes('IMPORT_PREVIEW_URL'), 'import preview endpoint');
+        assert.ok(script.raw.includes('IMPORT_COMMIT_URL'), 'import commit endpoint');
     });
 }
 
@@ -149,6 +152,8 @@ async function clickFlowTests() {
         { day: 'Friday',    period: 4 },
         { day: 'Saturday',  period: 6 }
     ];
+    // Every picked cell has a resolved faculty, so the cell owner must never
+    // appear in its own availability list.
 
     const results = [];
     for (const pick of picks) {
@@ -184,8 +189,8 @@ async function clickFlowTests() {
         assert.ok(monday.availableFaculty.length >= 2,
             'Monday P2 should have several free faculty');
         assert.deepStrictEqual(monday.availableFaculty.slice().sort(), [
-            'Dr. Smith', 'Dr. Anitha', 'Prof. Kiran', 'Dr. Suresh',
-            'Dr. Deepa', 'Prof. Naveen', 'Dr. Latha'
+            'Sri B.Gopala Rao', 'Ms.G.Sandhya Rani', 'Ms.Harathi',
+            'Mrs.A.Sravanthi', 'Mrs.K.Anitha', 'Mr. Ch.Sai Kishore'
         ].sort());
     });
 }
@@ -222,11 +227,11 @@ async function errorPathTests() {
     });
 
     const excluded = await request('POST', '/api/availability',
-        { day: 'Monday', period: 2, excludeFaculty: 'Prof. Kiran' });
+        { day: 'Monday', period: 2, excludeFaculty: 'Ms.Harathi' });
     check('excluding a free faculty removes exactly that name', () => {
         assert.strictEqual(excluded.status, 200);
-        assert.ok(!excluded.body.availableFaculty.includes('Prof. Kiran'));
-        assert.strictEqual(excluded.body.availableFaculty.length, 6);
+        assert.ok(!excluded.body.availableFaculty.includes('Ms.Harathi'));
+        assert.strictEqual(excluded.body.availableFaculty.length, 5);
     });
 
     const unreachable = await new Promise(resolve => {
@@ -268,7 +273,7 @@ async function regressionTests() {
     const phase1 = await request('POST', '/api/availability', { day: 'Monday', period: 2 });
     check('the Phase 1 API is unchanged', () => {
         assert.strictEqual(phase1.status, 200);
-        assert.strictEqual(phase1.body.availableFaculty.length, 7);
+        assert.strictEqual(phase1.body.availableFaculty.length, 6);
     });
 }
 

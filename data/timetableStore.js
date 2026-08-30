@@ -1,147 +1,63 @@
 /**
  * Normalized Timetable Store (read-only).
  *
- * Takes structured timetable source data (JSON today; CSV / Excel / document
- * extraction can feed the same `build()` function later) and normalizes every
- * class grid into flat per-faculty records:
+ *   source object --> normalizer --> validator --> indexed store --> API
  *
- *   { faculty, day, period, class, subject, room, status: 'BUSY' | 'FREE' }
+ * The store holds one normalized cell per day + period coordinate, plus a
+ * materialized FREE/BUSY record for every faculty x day x period, so an
+ * availability lookup is an index hit rather than a scan across timetables.
  *
- * A record exists for every faculty x day x period combination, so availability
- * is a direct index lookup rather than a scan across N separate timetables.
+ * Faculty may legitimately be `null` (unresolved) on a cell. Such a cell is
+ * still rendered and still clickable, but it marks nobody BUSY — we do not know
+ * who is teaching it, and guessing would corrupt availability results.
  *
  * This module never mutates the source file and exposes no write operations.
+ * `reload()` swaps the in-memory dataset; it writes nothing to disk.
  */
 const fs = require('fs');
 const path = require('path');
 
-const DEFAULT_SOURCE_PATH = path.join(__dirname, 'timetable-source.json');
+const { normalize, normalizeDayName, normalizePeriodNumber } = require('./normalizer');
+const { validate } = require('./validator');
 
-const DAY_ALIASES = {
-    MON: 'Monday', MONDAY: 'Monday',
-    TUE: 'Tuesday', TUES: 'Tuesday', TUESDAY: 'Tuesday',
-    WED: 'Wednesday', WEDS: 'Wednesday', WEDNESDAY: 'Wednesday',
-    THU: 'Thursday', THUR: 'Thursday', THURS: 'Thursday', THURSDAY: 'Thursday',
-    FRI: 'Friday', FRIDAY: 'Friday',
-    SAT: 'Saturday', SATURDAY: 'Saturday',
-    SUN: 'Sunday', SUNDAY: 'Sunday'
-};
+const DEFAULT_SOURCE_PATH = path.join(__dirname, 'timetable-source.json');
 
 function slotKey(day, period) {
     return `${day}|${period}`;
 }
 
+function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+
 /**
  * Build an immutable, indexed store from a source object.
- * Throws a descriptive Error if the source is inconsistent, so bad real-world
- * data fails loudly at startup instead of silently reporting someone as FREE.
+ * Throws a descriptive Error listing every validation error, so bad real-world
+ * data fails loudly instead of silently reporting someone as FREE.
  */
 function build(source) {
-    if (!source || typeof source !== 'object') {
-        throw new Error('Timetable source must be an object');
+    const normalized = normalize(source);
+    const report = validate(normalized);
+
+    if (!report.ok) {
+        const detail = report.errors.map(e => e.message).join('\n  - ');
+        throw new Error(`Timetable validation failed:\n  - ${detail}`);
     }
 
-    const meta = source.meta || {};
-    const days = Array.isArray(meta.days) && meta.days.length
-        ? meta.days.map(d => String(d).trim())
-        : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const periods = Array.isArray(meta.periods) && meta.periods.length
-        ? meta.periods.map(p => parseInt(p, 10))
-        : [1, 2, 3, 4, 5, 6, 7];
-    const periodTimings = meta.periodTimings || {};
+    const meta = normalized.meta;
+    const faculty = normalized.faculty;
+    const cells = normalized.cells;
+    const days = meta.days;
+    const periods = meta.periods;
+    const primaryClassName = meta.primaryClass;
 
-    const facultyList = Array.isArray(source.faculty) ? source.faculty : [];
-    if (facultyList.length === 0) {
-        throw new Error('Timetable source contains no faculty');
-    }
-
-    const faculty = facultyList.map(f => ({
-        id: String(f.id || f.faculty_id || f.name).trim(),
-        name: String(f.name || f.full_name).trim(),
-        department: f.department ? String(f.department).trim() : ''
-    }));
-
-    // Case-insensitive name lookup so minor casing differences in real data still resolve.
-    const facultyByName = new Map();
-    faculty.forEach(f => {
-        const key = f.name.toUpperCase();
-        if (facultyByName.has(key)) {
-            throw new Error(`Duplicate faculty name in source data: "${f.name}"`);
-        }
-        facultyByName.set(key, f);
-    });
-
-    const dayLookup = new Map(days.map(d => [d.toUpperCase(), d]));
-    const periodSet = new Set(periods);
-
-    // ---- Expand every class grid into BUSY records -------------------------
-    const busyRecords = [];
-    const classes = Array.isArray(source.classes) ? source.classes : [];
-
-    classes.forEach(cls => {
-        const className = String(cls.class || cls.name || '').trim();
-        if (!className) throw new Error('A class entry is missing its "class" name');
-        const defaultRoom = cls.defaultRoom ? String(cls.defaultRoom).trim() : null;
-        const rows = cls.rows || {};
-
-        Object.keys(rows).forEach(rawDay => {
-            const day = dayLookup.get(String(rawDay).trim().toUpperCase());
-            if (!day) {
-                throw new Error(`Class "${className}" references unknown day "${rawDay}"`);
-            }
-
-            (rows[rawDay] || []).forEach(cell => {
-                const startPeriod = parseInt(cell.period, 10);
-                const endPeriod = cell.spanTo != null ? parseInt(cell.spanTo, 10) : startPeriod;
-
-                if (!periodSet.has(startPeriod) || !periodSet.has(endPeriod)) {
-                    throw new Error(`Class "${className}" ${day}: period range ${startPeriod}-${endPeriod} is outside the declared periods [${periods.join(', ')}]`);
-                }
-                if (endPeriod < startPeriod) {
-                    throw new Error(`Class "${className}" ${day} P${startPeriod}: spanTo (${endPeriod}) is before the start period`);
-                }
-
-                const facultyName = String(cell.faculty || '').trim();
-                const member = facultyByName.get(facultyName.toUpperCase());
-                if (!member) {
-                    throw new Error(`Class "${className}" ${day} P${startPeriod} references faculty "${facultyName}" who is not in the faculty roster`);
-                }
-
-                for (let p = startPeriod; p <= endPeriod; p++) {
-                    busyRecords.push({
-                        faculty: member.name,
-                        facultyId: member.id,
-                        day,
-                        period: p,
-                        class: className,
-                        subject: cell.subject ? String(cell.subject).trim() : null,
-                        room: cell.room ? String(cell.room).trim() : defaultRoom,
-                        status: 'BUSY',
-                        isMerged: endPeriod > startPeriod,
-                        span: endPeriod > startPeriod ? { from: startPeriod, to: endPeriod } : null
-                    });
-                }
-            });
-        });
-    });
-
-    // ---- Detect double-booking (same faculty, same day+period, two classes) --
+    // ---- FREE/BUSY record per faculty x day x period ------------------------
     const busyByFacultySlot = new Map();
-    const conflicts = [];
-    busyRecords.forEach(rec => {
-        const key = `${rec.faculty}|${rec.day}|${rec.period}`;
-        const existing = busyByFacultySlot.get(key);
-        if (existing) {
-            conflicts.push(`${rec.faculty} is booked twice on ${rec.day} P${rec.period} (${existing.class} / ${rec.class})`);
-        } else {
-            busyByFacultySlot.set(key, rec);
-        }
+    cells.forEach(cell => {
+        if (!cell.faculty) return; // unresolved: marks nobody busy
+        busyByFacultySlot.set(`${cell.faculty}|${cell.day}|${cell.period}`, cell);
     });
-    if (conflicts.length > 0) {
-        throw new Error(`Timetable source has faculty double-bookings:\n  - ${conflicts.join('\n  - ')}`);
-    }
 
-    // ---- Materialize the full faculty x day x period record set -------------
     const records = [];
     const bySlot = new Map();
 
@@ -150,18 +66,31 @@ function build(source) {
             const slot = { busy: [], free: [] };
             faculty.forEach(member => {
                 const busy = busyByFacultySlot.get(`${member.name}|${day}|${period}`);
-                const record = busy || {
-                    faculty: member.name,
-                    facultyId: member.id,
-                    day,
-                    period,
-                    class: null,
-                    subject: null,
-                    room: null,
-                    status: 'FREE',
-                    isMerged: false,
-                    span: null
-                };
+                const record = busy
+                    ? {
+                        faculty: member.name,
+                        facultyId: member.id,
+                        day, period,
+                        class: busy.class,
+                        subject: busy.subject,
+                        room: busy.room,
+                        status: 'BUSY',
+                        spanId: busy.spanId,
+                        isMerged: busy.isMerged,
+                        span: busy.span
+                    }
+                    : {
+                        faculty: member.name,
+                        facultyId: member.id,
+                        day, period,
+                        class: null,
+                        subject: null,
+                        room: null,
+                        status: 'FREE',
+                        spanId: null,
+                        isMerged: false,
+                        span: null
+                    };
                 records.push(record);
                 (record.status === 'BUSY' ? slot.busy : slot.free).push(record);
             });
@@ -169,76 +98,62 @@ function build(source) {
         });
     });
 
-    // ---- Primary timetable grid (what the frontend renders) ----------------
-    const primaryClassName = meta.primaryClass
-        ? String(meta.primaryClass).trim()
-        : (classes[0] && String(classes[0].class).trim());
+    // ---- primary timetable grid (what the frontend renders) ----------------
+    const primaryByCoordinate = new Map();
+    cells.filter(c => c.class === primaryClassName)
+        .forEach(c => primaryByCoordinate.set(slotKey(c.day, c.period), c));
 
     const primaryCells = [];
     days.forEach(day => {
         periods.forEach(period => {
-            const rec = busyRecords.find(r => r.class === primaryClassName && r.day === day && r.period === period);
-            const timing = periodTimings[String(period)] || {};
-            primaryCells.push({
-                day,
-                period,
-                class: rec ? rec.class : primaryClassName,
-                subject: rec ? rec.subject : null,
-                faculty: rec ? rec.faculty : null,
-                facultyId: rec ? rec.facultyId : null,
-                room: rec ? rec.room : null,
-                startTime: timing.start || null,
-                endTime: timing.end || null,
-                status: rec ? 'BUSY' : 'FREE',
-                isMerged: rec ? rec.isMerged : false,
-                span: rec ? rec.span : null
-            });
+            const cell = primaryByCoordinate.get(slotKey(day, period));
+            const timing = meta.periodTimings[String(period)] || {};
+            primaryCells.push(cell
+                ? { ...cell, status: 'BUSY' }
+                : {
+                    day, period,
+                    startTime: timing.start || null,
+                    endTime: timing.end || null,
+                    class: primaryClassName,
+                    subject: null,
+                    faculty: null,
+                    facultyId: null,
+                    facultyResolution: 'unresolved',
+                    room: null,
+                    spanId: null,
+                    isMerged: false,
+                    span: null,
+                    source: 'derived-free',
+                    status: 'FREE'
+                });
         });
     });
 
-    const clone = obj => (obj == null ? obj : JSON.parse(JSON.stringify(obj)));
+    const periodSet = new Set(periods);
 
     return {
-        // ---- metadata ----
         getMeta() {
             return {
-                primaryClass: primaryClassName,
-                days: days.slice(),
-                periods: periods.slice(),
-                periodTimings: clone(periodTimings),
-                classes: classes.map(c => String(c.class).trim()),
+                ...clone(meta),
                 facultyCount: faculty.length
             };
         },
 
-        getFaculty() {
-            return faculty.map(f => ({ ...f }));
-        },
-
+        getFaculty() { return faculty.map(f => ({ ...f })); },
         getDays() { return days.slice(); },
         getPeriods() { return periods.slice(); },
 
-        // ---- normalization helpers ----
-        normalizeDay(input) {
-            if (input == null) return null;
-            const raw = String(input).trim();
-            if (!raw) return null;
-            const upper = raw.toUpperCase();
-            return dayLookup.get(upper) || dayLookup.get(DAY_ALIASES[upper] ? DAY_ALIASES[upper].toUpperCase() : '') || null;
-        },
+        /** The validation report this dataset loaded with (warnings included). */
+        getReport() { return clone(report); },
 
-        normalizePeriod(input) {
-            if (input == null) return null;
-            const match = String(input).trim().match(/(\d+)/);
-            if (!match) return null;
-            const period = parseInt(match[1], 10);
-            return periodSet.has(period) ? period : null;
-        },
+        normalizeDay(input) { return normalizeDayName(input, days); },
+        normalizePeriod(input) { return normalizePeriodNumber(input, periods); },
 
-        // ---- queries (read-only) ----
         getRecords() { return clone(records); },
 
-        /** Every faculty's status at one day+period. */
+        /** Every normalized cell, one per class/day/period coordinate. */
+        getCells() { return clone(cells); },
+
         getSlot(day, period) {
             const slot = bySlot.get(slotKey(day, period));
             if (!slot) return null;
@@ -246,8 +161,7 @@ function build(source) {
         },
 
         /**
-         * Core availability query.
-         * Returns the faculty who are FREE at this exact day + period.
+         * Core availability query: who is FREE at this exact day + period.
          * `exclude` (name) drops the faculty who owns the clicked cell.
          */
         getAvailableFaculty(day, period, exclude) {
@@ -259,16 +173,25 @@ function build(source) {
                 .map(r => ({ faculty: r.faculty, facultyId: r.facultyId }));
         },
 
-        /** The primary timetable grid the user clicks on. */
         getPrimaryTimetable() {
             return {
                 class: primaryClassName,
+                institution: meta.institution,
+                branch: meta.branch,
+                semester: meta.semester,
+                shift: meta.shift,
+                academicYear: meta.academicYear,
+                effectiveFrom: meta.effectiveFrom,
                 days: days.slice(),
                 periods: periods.slice(),
-                periodTimings: clone(periodTimings),
+                periodTimings: clone(meta.periodTimings),
+                breaks: clone(meta.breaks),
                 cells: clone(primaryCells)
             };
-        }
+        },
+
+        // Kept for callers that only need to know the period range.
+        hasPeriod(period) { return periodSet.has(period); }
     };
 }
 
@@ -276,16 +199,20 @@ function loadFromFile(sourcePath = DEFAULT_SOURCE_PATH) {
     return build(JSON.parse(fs.readFileSync(sourcePath, 'utf8')));
 }
 
-// Singleton built at startup from the default source file.
 let store = loadFromFile();
 
 module.exports = {
     build,
     loadFromFile,
     DEFAULT_SOURCE_PATH,
-    /** Swap in a different source (used by tests and future importers). */
+    /**
+     * Swap in a different dataset (used by the importers and by tests).
+     * In-memory only — nothing is written to disk. If `build` throws, the
+     * currently loaded store is left untouched.
+     */
     reload(source) {
-        store = source ? build(source) : loadFromFile();
+        const next = source ? build(source) : loadFromFile();
+        store = next;
         return store;
     },
     get current() { return store; }

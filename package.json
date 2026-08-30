@@ -8,12 +8,14 @@
     "dev": "nodemon server.js",
     "test": "node tests/timetable_test.js",
     "test:availability": "node tests/availability_test.js",
-    "test:ui": "node tests/phase2_timetable_ui_test.js"
+    "test:ui": "node tests/phase2_timetable_ui_test.js",
+    "test:import": "node tests/phase3_import_test.js"
   },
   "dependencies": {
     "@google/genai": "^2.19.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "multer": "^1.4.5-lts.1"

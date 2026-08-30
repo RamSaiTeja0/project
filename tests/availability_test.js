@@ -12,8 +12,12 @@ const http = require('http');
 const path = require('path');
 const { spawn } = require('child_process');
 
-const store = require('../data/timetableStore').current;
 const { build } = require('../data/timetableStore');
+
+// Store-logic tests run against the pinned demo fixture so they exercise the
+// normalizer/validator independently of whichever real timetable is loaded.
+// The live dataset is covered by the HTTP tests below and by the Phase 3 suite.
+const store = build(require('../data/fixtures/demo-timetable.json'));
 
 const PORT = process.env.TEST_PORT || 3199;
 const BASE = `http://localhost:${PORT}`;
@@ -27,7 +31,7 @@ function check(name, fn) {
 
 // ---------------------------------------------------------------- store tests
 function storeTests() {
-    console.log('\n[1] Normalized timetable store');
+    console.log('\n[1] Normalized timetable store (demo fixture)');
 
     const meta = store.getMeta();
     const faculty = store.getFaculty();
@@ -207,8 +211,8 @@ async function httpTests() {
     const meta = await request('GET', '/api/availability/meta');
     check('GET /api/availability/meta returns days, periods and faculty', () => {
         assert.strictEqual(meta.status, 200);
-        assert.strictEqual(meta.body.primaryClass, 'CSE-A');
-        assert.strictEqual(meta.body.faculty.length, 10);
+        assert.strictEqual(meta.body.primaryClass, 'DCME-V');
+        assert.strictEqual(meta.body.faculty.length, 7);
         assert.deepStrictEqual(meta.body.periods, [1, 2, 3, 4, 5, 6, 7]);
     });
 
@@ -217,8 +221,8 @@ async function httpTests() {
         assert.strictEqual(tt.status, 200);
         assert.strictEqual(tt.body.cells.length, 42);
         const cell = tt.body.cells.find(c => c.day === 'Monday' && c.period === 2);
-        assert.strictEqual(cell.faculty, 'Dr. Ravi');
-        assert.strictEqual(cell.subject, 'Python Programming');
+        assert.strictEqual(cell.faculty, 'Ms. B.Kusuma');
+        assert.strictEqual(cell.subject, 'PYTHON PROG');
     });
 
     const post = await request('POST', '/api/availability', { day: 'Monday', period: 2 });
@@ -227,20 +231,19 @@ async function httpTests() {
         assert.strictEqual(post.body.day, 'Monday');
         assert.strictEqual(post.body.period, 2);
         assert.deepStrictEqual(post.body.availableFaculty.slice().sort(), [
-            'Dr. Smith', 'Dr. Anitha', 'Prof. Kiran', 'Dr. Suresh',
-            'Dr. Deepa', 'Prof. Naveen', 'Dr. Latha'
+            'Sri B.Gopala Rao', 'Ms.G.Sandhya Rani', 'Ms.Harathi',
+            'Mrs.A.Sravanthi', 'Mrs.K.Anitha', 'Mr. Ch.Sai Kishore'
         ].sort());
-        assert.deepStrictEqual(post.body.busy.map(b => b.faculty).sort(),
-            ['Dr. Ravi', 'Prof. Arun', 'Prof. Priya'].sort());
+        assert.deepStrictEqual(post.body.busy.map(b => b.faculty).sort(), ['Ms. B.Kusuma'].sort());
     });
 
     const clicked = await request('POST', '/api/availability', {
-        day: 'Monday', period: 2, class: 'CSE-A', subject: 'Python Programming', faculty: 'Dr. Ravi'
+        day: 'Monday', period: 2, class: 'DCME-V', subject: 'PYTHON PROG', faculty: 'Ms. B.Kusuma'
     });
     check('a full clicked-cell payload works and never returns the cell owner', () => {
         assert.strictEqual(clicked.status, 200);
-        assert.ok(!clicked.body.availableFaculty.includes('Dr. Ravi'));
-        assert.strictEqual(clicked.body.availableFaculty.length, 7);
+        assert.ok(!clicked.body.availableFaculty.includes('Ms. B.Kusuma'));
+        assert.strictEqual(clicked.body.availableFaculty.length, 6);
     });
 
     const getForm = await request('GET', '/api/availability?day=mon&period=P2');
@@ -279,8 +282,8 @@ async function httpTests() {
     check('all 42 day+period slots resolve consistently', () => {
         assert.strictEqual(slotResults.length, 42);
         slotResults.forEach(({ day, period, r }) => {
-            assert.strictEqual(r.body.availableFaculty.length + r.body.busy.length, 10,
-                `${day} P${period}: free+busy must equal the 10-faculty roster`);
+            assert.strictEqual(r.body.availableFaculty.length + r.body.busy.length, 7,
+                `${day} P${period}: free+busy must equal the 7-faculty roster`);
             const overlap = r.body.availableFaculty.filter(f => r.body.busy.some(b => b.faculty === f));
             assert.strictEqual(overlap.length, 0, `${day} P${period}: faculty listed as both FREE and BUSY`);
         });

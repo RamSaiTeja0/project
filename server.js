@@ -43,12 +43,15 @@ const authRoutes = require('./routes/auth');
 const timetableRoutes = require('./routes/timetable');
 const substitutionsRoutes = require('./routes/substitutions');
 const availabilityRoutes = require('./routes/availability');
+const importRoutes = require('./routes/import');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/substitutions', substitutionsRoutes);
 // Read-only faculty availability lookup (day + period -> FREE faculty).
 app.use('/api/availability', availabilityRoutes);
+// Timetable import (CSV / Excel / image adapter) -> normalize -> validate.
+app.use('/api/import', importRoutes);
 
 // Fallback to serve index.html for unknown routes (SPA like behavior)
 app.get('*', (req, res) => {

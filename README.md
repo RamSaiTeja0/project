@@ -139,3 +139,69 @@ npm run test:availability
 Covers the store (normalization, merged labs, conflict detection, immutability)
 and the HTTP API (all 42 day + period slots, error handling, and a check that no
 call mutated any data).
+
+
+---
+
+## Phase 3 — Real timetable data & import pipeline
+
+The displayed timetable is the real **Aditya Institute of Technology and
+Management — DCME, C23 V SEM, II Shift Polytechnic (284), AY 2026-27, w.e.f.
+08-06-2026** schedule. It is data, not code: no timetable lives in the frontend.
+
+### Layers
+
+```
+importer (csv | excel | image adapter)
+      ↓  data/import/
+normalizer            data/normalizer.js    source → one cell per day+period
+      ↓
+validator             data/validator.js     errors block, warnings inform
+      ↓
+timetable store       data/timetableStore.js  indexed, read-only
+      ↓
+availability API      routes/availability.js
+      ↓
+frontend grid         public/js/tecsubstitution.js
+```
+
+### Normalized cell
+
+Every day + period coordinate becomes one object. A merged lab produces one
+cell per period it covers, each independently clickable, sharing a `spanId`:
+
+```json
+{ "day": "Monday", "period": 5, "startTime": "11:15", "endTime": "12:00",
+  "class": "DCME-V", "subject": "ANDROID PROG LAB", "faculty": "Ms.Harathi",
+  "room": null, "spanId": "DCME-V|Monday|P5-P7", "isMerged": true,
+  "span": { "from": 5, "to": 7 }, "source": "supplied-timetable" }
+```
+
+Faculty are resolved from the `subjectFaculty` map in the source file. A subject
+with no mapping yields `faculty: null` and an `UNRESOLVED_FACULTY` warning — it
+is never attributed to an invented name, and it marks nobody BUSY.
+
+### Import
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/import/formats` | Supported formats and image-adapter readiness |
+| `POST /api/import/preview` | Parse + validate an upload. Changes nothing. |
+| `POST /api/import/commit` | Same, then load it into the in-memory store |
+
+CSV and Excel (`.xlsx`) share one row format:
+`Day,Period,Subject,Faculty,Class,Room[,SpanTo]`. A blank `Faculty` is left
+unresolved. `SpanTo` marks a merged lab. Import is in-memory only — nothing is
+written to disk, and a failed import leaves the loaded timetable untouched.
+
+**Image import is an adapter only — extraction is not implemented.** Register a
+backend with `imageImporter.setExtractionBackend({ async extract(...) })`
+returning the same source-object shape; nothing downstream changes.
+
+### Tests
+
+```bash
+npm run test:availability   # Phase 1 — store logic (demo fixture) + live API
+npm run test:ui             # Phase 2 — page delivery + click payloads
+npm run test:import         # Phase 3 — real data, validation, importers
+```
