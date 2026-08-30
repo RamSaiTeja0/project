@@ -75,6 +75,10 @@
             if (timetable.shift) parts.push(escapeHtml(timetable.shift));
             if (timetable.academicYear) parts.push('AY ' + escapeHtml(timetable.academicYear));
             if (timetable.effectiveFrom) parts.push('w.e.f. ' + escapeHtml(timetable.effectiveFrom));
+            var count = timetable.timetableCount || 1;
+            parts.push(count === 1
+                ? '1 timetable loaded'
+                : count + ' timetables loaded (1 primary + ' + (count - 1) + ' reference)');
             metaNode.innerHTML = parts.join(' &nbsp;·&nbsp; ');
         }
 
@@ -227,10 +231,14 @@
         return '<div class="state-msg state-loading">Checking availability…</div>';
     }
 
-    function availabilityListHtml(names) {
+    function availabilityListHtml(names, timetablesChecked) {
         return '<ul class="faculty-list">' + names.map(function (name) {
             return '<li><span class="dot"></span>' + escapeHtml(name) + '</li>';
-        }).join('') + '</ul>';
+        }).join('') + '</ul>' +
+            (timetablesChecked
+                ? '<p class="checked-note">Free across all ' + escapeHtml(timetablesChecked) +
+                  ' loaded timetable' + (timetablesChecked === 1 ? '' : 's') + '.</p>'
+                : '');
     }
 
     function availabilityMessageHtml(message, kind, showRetry) {
@@ -296,7 +304,7 @@
                 return;
             }
 
-            setAvailabilityBody(availabilityListHtml(names));
+            setAvailabilityBody(availabilityListHtml(names, result.data.timetablesChecked));
         }).catch(function () {
             if (token !== requestToken) return;
             setAvailabilityBody(availabilityMessageHtml(

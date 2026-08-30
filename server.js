@@ -44,6 +44,7 @@ const timetableRoutes = require('./routes/timetable');
 const substitutionsRoutes = require('./routes/substitutions');
 const availabilityRoutes = require('./routes/availability');
 const importRoutes = require('./routes/import');
+const timetablesRoutes = require('./routes/timetables');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/timetable', timetableRoutes);
@@ -52,6 +53,8 @@ app.use('/api/substitutions', substitutionsRoutes);
 app.use('/api/availability', availabilityRoutes);
 // Timetable import (CSV / Excel / image adapter) -> normalize -> validate.
 app.use('/api/import', importRoutes);
+// Multi-timetable registry: one primary + N reference timetables.
+app.use('/api/timetables', timetablesRoutes);
 
 // Fallback to serve index.html for unknown routes (SPA like behavior)
 app.get('*', (req, res) => {

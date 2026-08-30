@@ -205,3 +205,79 @@ npm run test:availability   # Phase 1 — store logic (demo fixture) + live API
 npm run test:ui             # Phase 2 — page delivery + click payloads
 npm run test:import         # Phase 3 — real data, validation, importers
 ```
+
+
+---
+
+## Phase 4 — Multi-timetable availability engine
+
+Availability is decided across **every loaded timetable**, not the primary one.
+A faculty is BUSY at a day + period if they appear in *any* timetable at that
+slot; FREE only if they appear in none.
+
+### Architecture
+
+```
+sources (json | csv | xlsx | image adapter)
+      ↓
+normalizer            data/normalizer.js
+      ↓
+validator             data/validator.js
+      ↓
+multi-timetable store data/timetableRegistry.js   1 primary + N reference
+      ↓
+availability engine   data/availabilityEngine.js  pure, framework-free
+      ↓
+read-only API         routes/availability.js
+      ↓
+primary timetable UI  public/js/tecsubstitution.js
+```
+
+`data/timetableStore.js` is now a thin facade: `current` is a view over all
+loaded timetables, and `build(source)` is the one-timetable case of the same
+engine. The engine takes plain objects — no Express, no DOM — so it is directly
+unit-testable.
+
+### Data model
+
+Each registered timetable carries `{ id, name, branch, semester, section,
+isPrimary, source }` plus its normalized cells and validation report. Faculty
+are keyed by **canonical name**, so `Ms.Harathi` is one identity across every
+timetable; registering the same timetable twice cannot duplicate her or her
+availability.
+
+Reference timetables are auto-loaded from `data/timetables/*.json` at startup
+(see the README there). The primary stays `data/timetable-source.json`.
+
+### Endpoints
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/timetables` | List every loaded timetable |
+| `GET` | `/api/timetables/:id` | One timetable with its cells |
+| `POST` | `/api/timetables` | Register one (JSON `source`, or CSV/XLSX upload) |
+| `POST` | `/api/timetables/primary` | `{ id }` — mark exactly one primary |
+| `DELETE` | `/api/timetables/:id` | Remove one (never the last) |
+
+`/api/availability` is unchanged in shape and still read-only; its `busy`
+entries now name the timetable each faculty is busy in, and the response
+carries `timetablesChecked`.
+
+### Algorithm
+
+1. Union every timetable's faculty into one canonical roster (dedupe by name).
+2. Index `faculty|day|period → [source cells]` across all timetables. Cells with
+   `faculty: null` are skipped — an unresolved cell marks nobody BUSY.
+3. For a query, BUSY = roster members with a non-empty index entry (one record
+   each, listing every source); FREE = the rest.
+4. Drop the clicked cell's own faculty from the free list.
+
+A faculty scheduled in two *different* timetables at one slot is BUSY and raises
+a `CROSS_TIMETABLE_CONFLICT` warning. Within a *single* timetable that remains a
+validation error.
+
+### Tests
+
+```bash
+npm run test:multi          # Phase 4 — engine, registry, API
+```

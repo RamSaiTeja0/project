@@ -9,7 +9,8 @@
     "test": "node tests/timetable_test.js",
     "test:availability": "node tests/availability_test.js",
     "test:ui": "node tests/phase2_timetable_ui_test.js",
-    "test:import": "node tests/phase3_import_test.js"
+    "test:import": "node tests/phase3_import_test.js",
+    "test:multi": "node tests/phase4_multi_timetable_test.js"
   },
   "dependencies": {
     "@google/genai": "^2.19.0",

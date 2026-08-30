@@ -1,0 +1,114 @@
+{
+  "_comment": "Deterministic Phase 4 fixture: 1 primary + 2 reference timetables, 7 distinct faculty across overlapping and non-overlapping slots. Each timetable lists only the faculty it uses, so the registry must union them into one canonical roster.",
+
+  "primary": {
+    "meta": {
+      "primaryClass": "PRI-A", "branch": "PRI", "semester": "I SEM",
+      "days": ["Monday", "Tuesday"], "periods": [1, 2, 3, 4],
+      "periodTimings": {
+        "1": { "start": "9:00", "end": "9:45" },
+        "2": { "start": "9:45", "end": "10:30" },
+        "3": { "start": "10:30", "end": "11:15" },
+        "4": { "start": "11:15", "end": "12:00" }
+      }
+    },
+    "faculty": [
+      { "id": "F-KUS", "name": "Ms. B.Kusuma" },
+      { "id": "F-HAR", "name": "Ms.Harathi" },
+      { "id": "F-SRA", "name": "Mrs.A.Sravanthi" }
+    ],
+    "subjectFaculty": {
+      "PYTHON PROG": "Ms. B.Kusuma",
+      "ANDROID PROG": "Ms.Harathi",
+      "ANDROID PROG LAB": "Ms.Harathi",
+      "IOT": "Mrs.A.Sravanthi"
+    },
+    "classes": [
+      {
+        "class": "PRI-A", "source": "fixture",
+        "rows": {
+          "Monday": [
+            { "period": 1, "subject": "PYTHON PROG" },
+            { "period": 2, "subject": "PYTHON PROG" },
+            { "period": 3, "subject": "ANDROID PROG" },
+            { "period": 4, "subject": "TPC" }
+          ],
+          "Tuesday": [
+            { "period": 1, "subject": "IOT" },
+            { "period": 2, "spanTo": 4, "subject": "ANDROID PROG LAB" }
+          ]
+        }
+      }
+    ]
+  },
+
+  "references": [
+    {
+      "meta": {
+        "primaryClass": "REF-B", "branch": "REF", "semester": "III SEM",
+        "days": ["Monday", "Tuesday"], "periods": [1, 2, 3, 4]
+      },
+      "faculty": [
+        { "id": "F-GOP", "name": "Sri B.Gopala Rao" },
+        { "id": "F-SAN", "name": "Ms.G.Sandhya Rani" },
+        { "id": "F-ANI", "name": "Mrs.K.Anitha" },
+        { "id": "F-SRA", "name": "Mrs.A.Sravanthi" }
+      ],
+      "subjectFaculty": {
+        "IM & EP": "Sri B.Gopala Rao",
+        "BD & CC": "Ms.G.Sandhya Rani",
+        "LIFE SKILLS": "Mrs.K.Anitha",
+        "IOT": "Mrs.A.Sravanthi"
+      },
+      "classes": [
+        {
+          "class": "REF-B", "source": "fixture",
+          "rows": {
+            "Monday": [
+              { "period": 1, "subject": "IM & EP" },
+              { "period": 2, "subject": "BD & CC" },
+              { "period": 3, "subject": "LIFE SKILLS" }
+            ],
+            "Tuesday": [
+              { "period": 2, "subject": "IOT" }
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "meta": {
+        "primaryClass": "REF-C", "branch": "REF", "semester": "V SEM",
+        "days": ["Monday", "Tuesday"], "periods": [1, 2, 3, 4]
+      },
+      "faculty": [
+        { "id": "F-ANI", "name": "Mrs.K.Anitha" },
+        { "id": "F-SAN", "name": "Ms.G.Sandhya Rani" },
+        { "id": "F-KIS", "name": "Mr. Ch.Sai Kishore" },
+        { "id": "F-GOP", "name": "Sri B.Gopala Rao" }
+      ],
+      "subjectFaculty": {
+        "LIFE SKILLS": "Mrs.K.Anitha",
+        "BD & CC": "Ms.G.Sandhya Rani",
+        "PROJECT": "Mr. Ch.Sai Kishore",
+        "IM & EP": "Sri B.Gopala Rao"
+      },
+      "classes": [
+        {
+          "class": "REF-C", "source": "fixture",
+          "rows": {
+            "Monday": [
+              { "period": 2, "subject": "LIFE SKILLS" },
+              { "period": 3, "subject": "BD & CC" },
+              { "period": 4, "subject": "PROJECT" }
+            ],
+            "Tuesday": [
+              { "period": 1, "subject": "IM & EP" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

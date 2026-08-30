@@ -51,8 +51,13 @@ function handleAvailability(rawDay, rawPeriod, rawExclude, res) {
             facultyId: r.facultyId,
             class: r.class,
             subject: r.subject,
-            room: r.room
+            room: r.room,
+            // Which loaded timetable(s) make this faculty busy at this slot.
+            timetableId: r.timetableId,
+            timetableName: r.timetableName,
+            sources: r.sources
         })),
+        timetablesChecked: store.getTimetables().length,
         excluded: exclude || null
     });
 }
@@ -82,6 +87,7 @@ router.get('/slot/:day/:period', (req, res) => {
     res.json({
         day: slot.day,
         period: slot.period,
+        timetablesChecked: store.getTimetables().length,
         free: detail.free.map(r => ({ faculty: r.faculty, facultyId: r.facultyId, status: r.status })),
         busy: detail.busy.map(r => ({
             faculty: r.faculty,
@@ -89,7 +95,10 @@ router.get('/slot/:day/:period', (req, res) => {
             status: r.status,
             class: r.class,
             subject: r.subject,
-            room: r.room
+            room: r.room,
+            timetableId: r.timetableId,
+            timetableName: r.timetableName,
+            sources: r.sources
         }))
     });
 });
