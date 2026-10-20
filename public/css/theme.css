@@ -1,0 +1,493 @@
+/* TecSubstitution — shared design tokens and primitives.
+   Linked by the landing page, the sign-in page and the dashboard so the three
+   look like one application.
+
+   Palette: white / light-gray surfaces, dark navy text, a single indigo accent.
+   No neon, no gradients beyond one very soft page wash, no decorative motion. */
+
+:root {
+  /* Accent — indigo */
+  --brand-700: #3730a3;
+  --brand-600: #4338ca;
+  --brand-500: #4f46e5;
+  --brand-400: #6366f1;
+  --brand-100: #e0e7ff;
+  --brand-050: #eef2ff;
+
+  /* Text — dark navy */
+  --ink-900: #0f172a;
+  --ink-800: #1e293b;
+  --ink-700: #334155;
+  --ink-500: #64748b;
+  --ink-400: #94a3b8;
+
+  /* Surfaces and lines */
+  --surface: #ffffff;
+  --canvas: #f8fafc;
+  --canvas-alt: #f1f5f9;
+  --line: #e2e8f0;
+  --line-soft: #eef2f6;
+
+  /* Status */
+  --ok-700: #166534;
+  --ok-500: #16a34a;
+  --ok-100: #dcfce7;
+  --ok-line: #bbf7d0;
+  --warn-700: #92400e;
+  --warn-100: #fef3c7;
+  --warn-line: #fde68a;
+  --danger-700: #991b1b;
+  --danger-500: #dc2626;
+  --danger-100: #fee2e2;
+  --danger-line: #fecaca;
+
+  --radius: 10px;
+  --radius-sm: 7px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 6px 16px -8px rgba(15, 23, 42, 0.10);
+  --shadow-lg: 0 4px 10px rgba(15, 23, 42, 0.06), 0 18px 40px -18px rgba(15, 23, 42, 0.22);
+
+  --sidebar: 256px;
+  --topbar: 66px;
+  --font: "Inter", "Segoe UI", Roboto, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --mono: "Cascadia Mono", "SF Mono", Consolas, "Courier New", monospace;
+
+  /* Aliases & convenience tokens */
+  --border: var(--line);
+  --radius-md: 10px;
+  --surface-subtle: #f8fafc;
+  --canvas-subtle: var(--canvas-alt);
+  --brand-200: #c7d2fe;
+  --brand-800: #312e81;
+  --danger-050: #fef2f2;
+  --danger-200: var(--danger-line);
+}
+
+/* ---------------------------------------------------------- shared basics */
+* {
+  box-sizing: border-box;
+}
+
+/* A class such as .btn sets display, which would otherwise out-specify the
+   user-agent [hidden] rule and leave hidden elements visible. */
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-700);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--ink-900);
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--brand-600);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Shared brand lockup: dashboard sidebar, site header, sign-in card. */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  line-height: normal;
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  background: var(--brand-600);
+  color: #ffffff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+}
+
+.brand-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.brand-text {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--ink-900);
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.brand-subtitle {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--ink-500);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* The branch a signed-in account belongs to */
+.brand-branch {
+  color: var(--brand-600, #2563eb);
+  font-weight: 750;
+}
+
+.brand-branch[hidden] {
+  display: none;
+}
+
+/* -------------------------------------------------------------- buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--brand-600);
+  color: #ffffff;
+  border: 1px solid var(--brand-600);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--brand-700);
+  border-color: var(--brand-700);
+}
+
+.btn:disabled {
+  background: var(--ink-400);
+  border-color: var(--ink-400);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--ink-800);
+  border-color: var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  background: var(--canvas-alt);
+  border-color: var(--ink-400);
+}
+
+.btn-light {
+  background: #ffffff;
+  color: var(--brand-700);
+  border-color: #ffffff;
+}
+
+.btn-light:hover {
+  background: var(--brand-050);
+  border-color: var(--brand-050);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-800);
+  border-color: var(--line);
+}
+
+.btn-ghost:hover {
+  background: var(--canvas-alt);
+}
+
+.btn-sm {
+  padding: 7px 13px;
+  font-size: 0.82rem;
+}
+
+.btn-primary {
+  background: var(--brand-600);
+  color: #ffffff;
+  border-color: var(--brand-600);
+}
+
+.btn-primary:hover {
+  background: var(--brand-700);
+  border-color: var(--brand-700);
+}
+
+.btn-danger {
+  background: var(--danger-500);
+  color: #ffffff;
+  border-color: var(--danger-500);
+}
+
+.btn-danger:hover {
+  background: var(--danger-700);
+  border-color: var(--danger-700);
+}
+
+.btn-success {
+  background: var(--ok-500);
+  color: #ffffff;
+  border-color: var(--ok-500);
+}
+
+.btn-success:hover {
+  background: var(--ok-700);
+  border-color: var(--ok-700);
+}
+
+/* --------------------------------------------------------------- badges */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.badge-free {
+  background: var(--ok-100);
+  color: var(--ok-700);
+}
+
+.badge-busy {
+  background: var(--danger-100);
+  color: var(--danger-700);
+}
+
+.badge-neutral {
+  background: var(--brand-050);
+  color: var(--brand-700);
+}
+
+.badge-muted {
+  background: var(--canvas-alt);
+  color: var(--ink-500);
+}
+
+.badge-primary {
+  background: var(--brand-100);
+  color: var(--brand-700);
+}
+
+.badge-success {
+  background: var(--ok-100);
+  color: var(--ok-700);
+}
+
+.badge-warning {
+  background: var(--warn-100);
+  color: var(--warn-700);
+}
+
+.badge-danger {
+  background: var(--danger-100);
+  color: var(--danger-700);
+}
+
+.badge-info {
+  background: var(--brand-050);
+  color: var(--brand-700);
+  border: 1px solid var(--brand-100);
+}
+
+/* -------------------------------------------------------------- notices */
+.notice {
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  border: 1px solid transparent;
+}
+
+.notice-info {
+  background: var(--brand-050);
+  border-color: var(--brand-100);
+  color: var(--ink-700);
+}
+
+.notice-ok,
+.notice-success {
+  background: var(--ok-100);
+  border-color: var(--ok-line);
+  color: var(--ok-700);
+}
+
+.notice-warn {
+  background: var(--warn-100);
+  border-color: var(--warn-line);
+  color: var(--warn-700);
+}
+
+.notice-error,
+.notice-danger {
+  background: var(--danger-100);
+  border-color: var(--danger-line);
+  color: var(--danger-700);
+}
+
+.notice+.notice {
+  margin-top: 8px;
+}
+
+.muted {
+  color: var(--ink-500);
+  font-size: 0.87rem;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.tick {
+  color: var(--ok-500);
+  font-weight: 700;
+}
+
+.cross {
+  color: var(--danger-500);
+  font-weight: 700;
+}
+
+/* Shared form fields. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field>span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.field input,
+.field select,
+.field textarea,
+.input {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink-900);
+  padding: 9px 11px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.input:focus {
+  outline: none;
+  border-color: var(--brand-400);
+  box-shadow: 0 0 0 3px var(--brand-050);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+
+/* Password toggle styles */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 44px !important;
+}
+
+.btn-toggle-pw {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--ink-500);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-toggle-pw:hover {
+  color: var(--ink-900);
+  background-color: var(--canvas-alt);
+}
+
+.btn-toggle-pw:focus-visible {
+  outline: 2px solid var(--brand-500);
+}
+
+.btn-toggle-pw svg {
+  display: block;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

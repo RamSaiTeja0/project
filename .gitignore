@@ -1,3 +1,10 @@
 node_modules/
-database/scheduler.db
 .env
+*.log
+npm-debug.log*
+uploads/
+tmp/
+.DS_Store
+coverage/
+backups/
+scratch/
