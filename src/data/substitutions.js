@@ -229,6 +229,104 @@ function hasAcceptedSubstitution(faculty, dateStr, period) {
 }
 
 /**
+ * Check whether a scheduled teaching class for an original faculty member is covered by an accepted substitute.
+ * Returns { isCovered: true, status: 'ACCEPTED', substituteName, ... } if an accepted substitute is assigned,
+ * or { isCovered: false, status: 'PENDING'|'REJECTED'|'CANCELLED'|'NONE', ... } otherwise.
+ */
+async function findTeachingCoverage({ originalFaculty, date, period, className }) {
+    if (!originalFaculty || !date || period == null) return null;
+    const periodNum = parseInt(period, 10);
+    const facName = (originalFaculty.name || '').trim().toUpperCase();
+    const facId = originalFaculty.id ? String(originalFaculty.id).trim().toUpperCase() : null;
+    const targetClass = className ? String(className).trim().toUpperCase() : null;
+
+    // In database mode, sync the latest records for this date and period
+    let dbMatches = [];
+    if (db.isConfigured() && store.usingDatabase) {
+        try {
+            const dbRecords = await repository.listFacultySubstitutions({
+                date,
+                period: periodNum
+            });
+            if (Array.isArray(dbRecords)) {
+                syncFromDatabase(dbRecords);
+                dbMatches = dbRecords;
+            }
+        } catch (_) {}
+    }
+
+    const allRecords = inMemorySubstitutions.slice();
+    for (const d of dbMatches) {
+        if (!allRecords.some(r => String(r.id) === String(d.id))) {
+            allRecords.push(d);
+        }
+    }
+
+    const matching = allRecords.filter(s => {
+        const sDate = s.date ? (typeof s.date === 'string' ? s.date.slice(0, 10) : s.date.toISOString().slice(0, 10)) : '';
+        if (sDate !== date) return false;
+        if (parseInt(s.period, 10) !== periodNum) return false;
+
+        const sOrigName = (s.originalFacultyName || s.original_faculty_name || '').trim().toUpperCase();
+        const sOrigId = (s.originalFacultyId != null ? s.originalFacultyId : s.original_faculty_id);
+        const sOrigIdStr = sOrigId != null ? String(sOrigId).trim().toUpperCase() : null;
+
+        const origMatches = (facName && sOrigName === facName) || (facId && sOrigIdStr && sOrigIdStr === facId);
+        if (!origMatches) return false;
+
+        const sClass = (s.className || s.class_name || '').trim().toUpperCase();
+        if (targetClass && sClass && sClass !== targetClass) {
+            return false;
+        }
+        return true;
+    });
+
+    if (matching.length === 0) {
+        return {
+            isCovered: false,
+            status: 'NONE'
+        };
+    }
+
+    // Check for ACCEPTED first
+    const accepted = matching.find(s => {
+        const st = (s.status || '').toUpperCase();
+        const hasSub = Boolean(s.substituteFacultyName || s.substitute_faculty_name || s.substituteFacultyId || s.substitute_faculty_id);
+        return st === 'ACCEPTED' && hasSub;
+    });
+
+    if (accepted) {
+        return {
+            isCovered: true,
+            status: 'ACCEPTED',
+            substituteName: accepted.substituteFacultyName || accepted.substitute_faculty_name,
+            substituteId: accepted.substituteFacultyId || accepted.substitute_faculty_id,
+            substitution: accepted
+        };
+    }
+
+    // Check for PENDING
+    const pending = matching.find(s => (s.status || '').toUpperCase() === 'PENDING');
+    if (pending) {
+        return {
+            isCovered: false,
+            status: 'PENDING',
+            substituteName: pending.substituteFacultyName || pending.substitute_faculty_name,
+            substitution: pending
+        };
+    }
+
+    // Check REJECTED or CANCELLED
+    const latest = matching[matching.length - 1];
+    return {
+        isCovered: false,
+        status: (latest.status || 'NONE').toUpperCase(),
+        substituteName: latest.substituteFacultyName || latest.substitute_faculty_name,
+        substitution: latest
+    };
+}
+
+/**
  * Faculty A creates a substitution request for one of their vacant periods.
  */
 async function createRequest({ date, period, className, subject, substituteFacultyId, substituteFacultyName, isAdjustment, sessionUser }) {
@@ -1227,6 +1325,7 @@ module.exports = {
     getMyVacantPeriods,
     getCandidates,
     hasAcceptedSubstitution,
+    findTeachingCoverage,
     findFaculty,
     findTeachingClass,
     syncFromDatabase,

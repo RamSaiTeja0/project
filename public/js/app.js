@@ -3261,8 +3261,13 @@
                 }
                 if (alertBox) {
                     alertBox.style.display = 'block';
-                    alertBox.innerHTML = '<div class="notice notice-success">Invigilation request submitted successfully! Your HOS will review it.</div>';
-                    setTimeout(function () { alertBox.style.display = 'none'; }, 4000);
+                    var successMsg = 'Invigilation request submitted successfully! Your HOS will review it.';
+                    if (body.request && body.request.blockedPeriods && body.request.blockedPeriods.length > 0) {
+                        var blockedNotes = body.request.blockedPeriods.map(function (b) { return b.reason; }).join(' ');
+                        successMsg = 'Invigilation request submitted for Period(s) ' + esc(body.request.periods.join(', ')) + '.<br/><span style="margin-top:4px; display:inline-block; font-size:0.9em; opacity:0.95;">Note: ' + esc(blockedNotes) + '</span>';
+                    }
+                    alertBox.innerHTML = '<div class="notice notice-success">' + successMsg + '</div>';
+                    setTimeout(function () { alertBox.style.display = 'none'; }, 6000);
                 }
                 el('facultyInvigRequestForm').reset();
                 loadRequestInvigilationForm();

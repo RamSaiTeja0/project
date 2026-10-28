@@ -329,18 +329,33 @@ async function createDirectAssignment({ facultyIdentifier, date, periods, notes,
         // 1. Timetable teaching conflict
         const timetableConflict = checkTimetableConflict(faculty, parsedDate.dayOfWeek, p);
         if (timetableConflict) {
-            const err = new Error(
-                `FACULTY_PERIOD_CONFLICT: Faculty "${faculty.name}" already has a timetable class on ${parsedDate.dayOfWeek} period ${p} (${timetableConflict.subject || 'Teaching'} for ${timetableConflict.className || 'class'}).`
-            );
-            err.status = 409;
-            err.code = 'FACULTY_PERIOD_CONFLICT';
-            err.conflict = {
-                dayOfWeek: parsedDate.dayOfWeek,
-                period: p,
-                subject: timetableConflict.subject,
-                className: timetableConflict.className
-            };
-            throw err;
+            let coverage = null;
+            try {
+                const substitutionsModule = require('./substitutions');
+                if (typeof substitutionsModule.findTeachingCoverage === 'function') {
+                    coverage = await substitutionsModule.findTeachingCoverage({
+                        originalFaculty: faculty,
+                        date: parsedDate.dateStr,
+                        period: p,
+                        className: timetableConflict.className
+                    });
+                }
+            } catch (_) {}
+
+            if (!coverage || !coverage.isCovered) {
+                const err = new Error(
+                    `FACULTY_PERIOD_CONFLICT: Faculty "${faculty.name}" already has a timetable class on ${parsedDate.dayOfWeek} period ${p} (${timetableConflict.subject || 'Teaching'} for ${timetableConflict.className || 'class'}) and no substitute is assigned to cover it.`
+                );
+                err.status = 409;
+                err.code = 'FACULTY_PERIOD_CONFLICT';
+                err.conflict = {
+                    dayOfWeek: parsedDate.dayOfWeek,
+                    period: p,
+                    subject: timetableConflict.subject,
+                    className: timetableConflict.className
+                };
+                throw err;
+            }
         }
 
         // 2. Duplicate active invigilation
@@ -493,32 +508,77 @@ async function submitInvigilationRequest({ date, periods, reason, sessionUser })
     const facultyBranch = String(sessionUser.department || faculty.department || '').trim().toUpperCase();
 
     // Early conflict checking for transparent feedback to faculty
-    for (const p of periodList) {
-        const timetableConflict = checkTimetableConflict(faculty, parsedDate.dayOfWeek, p);
-        if (timetableConflict) {
-            const err = new Error(
-                `FACULTY_PERIOD_CONFLICT: You have a scheduled teaching class on ${parsedDate.dayOfWeek} period ${p} (${timetableConflict.subject || 'Teaching'} for ${timetableConflict.className || 'class'}).`
-            );
-            err.status = 409;
-            err.code = 'FACULTY_PERIOD_CONFLICT';
-            err.conflict = {
-                dayOfWeek: parsedDate.dayOfWeek,
-                period: p,
-                subject: timetableConflict.subject,
-                className: timetableConflict.className
-            };
-            throw err;
-        }
+    const validPeriods = [];
+    const blockedPeriods = [];
 
+    for (const p of periodList) {
         const hasDuplicate = await checkDuplicateInvigilation(faculty, parsedDate.dateStr, p);
         if (hasDuplicate) {
-            const err = new Error(
-                `DUPLICATE_INVIGILATION: You already have an active invigilation assignment on ${parsedDate.dateStr} period ${p}.`
-            );
-            err.status = 409;
-            err.code = 'DUPLICATE_INVIGILATION';
-            throw err;
+            blockedPeriods.push({
+                period: p,
+                dayOfWeek: parsedDate.dayOfWeek,
+                reason: `DUPLICATE_INVIGILATION: You already have an active invigilation assignment on ${parsedDate.dateStr} period ${p}.`,
+                code: 'DUPLICATE_INVIGILATION'
+            });
+            continue;
         }
+
+        const timetableConflict = checkTimetableConflict(faculty, parsedDate.dayOfWeek, p);
+        if (timetableConflict) {
+            let coverage = null;
+            try {
+                const substitutionsModule = require('./substitutions');
+                if (typeof substitutionsModule.findTeachingCoverage === 'function') {
+                    coverage = await substitutionsModule.findTeachingCoverage({
+                        originalFaculty: faculty,
+                        date: parsedDate.dateStr,
+                        period: p,
+                        className: timetableConflict.className
+                    });
+                }
+            } catch (_) {}
+
+            if (coverage && coverage.isCovered) {
+                // Class is properly covered by an accepted substitute
+                validPeriods.push(p);
+            } else {
+                let reason = `You have a scheduled teaching class on ${parsedDate.dayOfWeek}, Period ${p}, and no substitute has been assigned to cover it.`;
+                if (coverage && coverage.status === 'PENDING') {
+                    reason = `You have a scheduled teaching class on ${parsedDate.dayOfWeek}, Period ${p}, and the substitution request is pending (not yet accepted).`;
+                } else if (coverage && coverage.status === 'REJECTED') {
+                    reason = `You have a scheduled teaching class on ${parsedDate.dayOfWeek}, Period ${p}, and the substitution request was rejected. No substitute has been assigned to cover it.`;
+                } else if (coverage && coverage.status === 'CANCELLED') {
+                    reason = `You have a scheduled teaching class on ${parsedDate.dayOfWeek}, Period ${p}, and the substitution request was cancelled. No substitute has been assigned to cover it.`;
+                }
+
+                blockedPeriods.push({
+                    period: p,
+                    dayOfWeek: parsedDate.dayOfWeek,
+                    subject: timetableConflict.subject,
+                    className: timetableConflict.className,
+                    reason,
+                    code: 'FACULTY_PERIOD_CONFLICT'
+                });
+            }
+        } else {
+            validPeriods.push(p);
+        }
+    }
+
+    if (validPeriods.length === 0) {
+        const firstBlocked = blockedPeriods[0];
+        const allReasons = blockedPeriods.map(b => b.reason).join(' ');
+        const err = new Error(allReasons || 'All selected periods are blocked by teaching conflicts.');
+        err.status = 409;
+        err.code = firstBlocked ? firstBlocked.code : 'FACULTY_PERIOD_CONFLICT';
+        err.conflict = {
+            dayOfWeek: parsedDate.dayOfWeek,
+            period: firstBlocked ? firstBlocked.period : periodList[0],
+            subject: firstBlocked ? firstBlocked.subject : null,
+            className: firstBlocked ? firstBlocked.className : null,
+            blockedPeriods
+        };
+        throw err;
     }
 
     const now = new Date().toISOString();
@@ -545,7 +605,7 @@ async function submitInvigilationRequest({ date, periods, reason, sessionUser })
             facultyId: dbFacultyId,
             branchCode: facultyBranch,
             examDate: parsedDate.dateStr,
-            periods: periodList,
+            periods: validPeriods,
             reason: reason || null
         });
 
@@ -557,7 +617,9 @@ async function submitInvigilationRequest({ date, periods, reason, sessionUser })
             branchCode: facultyBranch,
             examDate: parsedDate.dateStr,
             dayOfWeek: parsedDate.dayOfWeek,
-            periods: periodList,
+            periods: validPeriods,
+            requestedPeriods: periodList,
+            blockedPeriods: blockedPeriods,
             reason: reason || null,
             status: 'PENDING',
             reviewedBy: null,
@@ -577,7 +639,9 @@ async function submitInvigilationRequest({ date, periods, reason, sessionUser })
         branchCode: facultyBranch,
         examDate: parsedDate.dateStr,
         dayOfWeek: parsedDate.dayOfWeek,
-        periods: periodList,
+        periods: validPeriods,
+        requestedPeriods: periodList,
+        blockedPeriods: blockedPeriods,
         reason: reason || null,
         status: 'PENDING',
         reviewedBy: null,
@@ -722,18 +786,33 @@ async function approveRequest(requestId, sessionUser) {
     for (const p of periods) {
         const timetableConflict = checkTimetableConflict(faculty, parsedDate.dayOfWeek, p);
         if (timetableConflict) {
-            const err = new Error(
-                `FACULTY_PERIOD_CONFLICT: Faculty "${faculty.name}" already has a timetable class on ${parsedDate.dayOfWeek} period ${p} (${timetableConflict.subject || 'Teaching'} for ${timetableConflict.className || 'class'}).`
-            );
-            err.status = 409;
-            err.code = 'FACULTY_PERIOD_CONFLICT';
-            err.conflict = {
-                dayOfWeek: parsedDate.dayOfWeek,
-                period: p,
-                subject: timetableConflict.subject,
-                className: timetableConflict.className
-            };
-            throw err;
+            let coverage = null;
+            try {
+                const substitutionsModule = require('./substitutions');
+                if (typeof substitutionsModule.findTeachingCoverage === 'function') {
+                    coverage = await substitutionsModule.findTeachingCoverage({
+                        originalFaculty: faculty,
+                        date: parsedDate.dateStr,
+                        period: p,
+                        className: timetableConflict.className
+                    });
+                }
+            } catch (_) {}
+
+            if (!coverage || !coverage.isCovered) {
+                const err = new Error(
+                    `FACULTY_PERIOD_CONFLICT: Faculty "${faculty.name}" already has a timetable class on ${parsedDate.dayOfWeek} period ${p} (${timetableConflict.subject || 'Teaching'} for ${timetableConflict.className || 'class'}) and no substitute is assigned to cover it.`
+                );
+                err.status = 409;
+                err.code = 'FACULTY_PERIOD_CONFLICT';
+                err.conflict = {
+                    dayOfWeek: parsedDate.dayOfWeek,
+                    period: p,
+                    subject: timetableConflict.subject,
+                    className: timetableConflict.className
+                };
+                throw err;
+            }
         }
 
         const hasDuplicate = await checkDuplicateInvigilation(faculty, parsedDate.dateStr, p);
