@@ -2,6 +2,10 @@
  * Application configuration, resolved from the environment with safe defaults.
  * No secrets live in source — copy .env.example to .env to override.
  */
+const dns = require('dns');
+if (typeof dns.setDefaultResultOrder === 'function') {
+    dns.setDefaultResultOrder('ipv4first');
+}
 require('dotenv').config();
 const crypto = require('crypto');
 
@@ -62,13 +66,17 @@ const config = {
      * is a secret — it is never logged, and .env is git-ignored.
      */
     get databaseUrl() {
-        return (process.env.DATABASE_URL || '').trim() || null;
+        let url = (process.env.DATABASE_URL || '').trim() || null;
+        if (url && /sslmode=(require|prefer|verify-ca)(?:&|$)/i.test(url)) {
+            url = url.replace(/sslmode=(require|prefer|verify-ca)/ig, 'sslmode=verify-full');
+        }
+        return url;
     },
     set databaseUrl(val) {
         process.env.DATABASE_URL = val ? String(val).trim() : '';
     },
     dbPoolMax: intOr(process.env.DB_POOL_MAX, 20),
-    dbConnectTimeoutMs: intOr(process.env.DB_CONNECT_TIMEOUT_MS, 20000),
+    dbConnectTimeoutMs: intOr(process.env.DB_CONNECT_TIMEOUT_MS, 30000),
     /** Create tables and insert the demo rows on startup when the DB is empty (default false). */
     dbAutoSeed: boolOr(process.env.DB_AUTO_SEED, false),
 
@@ -116,7 +124,9 @@ const config = {
     /** Whether to seed legacy multi-branch demo data (defaults to false). */
     dbSeedDemo: boolOr(process.env.DB_SEED_DEMO, false),
     /** Whether to load demo dataset into memory (defaults to false for fresh instances). */
-    loadDemoData: boolOr(process.env.LOAD_DEMO_DATA, false)
+    loadDemoData: boolOr(process.env.LOAD_DEMO_DATA, false),
+    /** Explicit offline demo mode override. */
+    demoMode: boolOr(process.env.DEMO_MODE, false)
 };
 
 function validateConfig(options = {}) {

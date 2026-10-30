@@ -184,7 +184,7 @@ async function getFacultyGridForSession(session) {
         } else if (typeof store.getFacultyPersonalTimetableInMemory === 'function') {
             personalSlots = store.getFacultyPersonalTimetableInMemory(facultyName);
         }
-    } catch (_) {}
+    } catch (_) { }
 
     if (personalSlots && personalSlots.length > 0) {
         const DAY_CANONICAL = {
@@ -209,19 +209,19 @@ async function getFacultyGridForSession(session) {
             return m ? parseInt(m[1], 10) : null;
         };
 
-function normalizeClassName(className) {
-    if (!className) return null;
-    const s = String(className).trim();
-    if (!s) return null;
-    const direct = normalizeDepartmentCode(s);
-    if (direct !== s) return direct;
-    return s.replace(/^DCME([-_ \t]|$)/i, 'CME$1')
-            .replace(/^DCSE([-_ \t]|$)/i, 'CME$1')
-            .replace(/^DEEE([-_ \t]|$)/i, 'EEE$1')
-            .replace(/^DMEC([-_ \t]|$)/i, 'MEC$1')
-            .replace(/^DECE([-_ \t]|$)/i, 'ECE$1')
-            .replace(/^DCIVIL([-_ \t]|$)/i, 'CIVIL$1');
-}
+        function normalizeClassName(className) {
+            if (!className) return null;
+            const s = String(className).trim();
+            if (!s) return null;
+            const direct = normalizeDepartmentCode(s);
+            if (direct !== s) return direct;
+            return s.replace(/^DCME([-_ \t]|$)/i, 'CME$1')
+                .replace(/^DCSE([-_ \t]|$)/i, 'CME$1')
+                .replace(/^DEEE([-_ \t]|$)/i, 'EEE$1')
+                .replace(/^DMEC([-_ \t]|$)/i, 'MEC$1')
+                .replace(/^DECE([-_ \t]|$)/i, 'ECE$1')
+                .replace(/^DCIVIL([-_ \t]|$)/i, 'CIVIL$1');
+        }
 
         personalSlots.forEach(s => {
             const canonicalD = normDay(s.day);
@@ -365,6 +365,21 @@ router.get('/mine', async (req, res) => {
 router.get('/', async (req, res) => {
     const engine = store.engine;
 
+    // Branch isolation for authenticated users (HOS or Faculty)
+    const sessionDept = req.session && req.session.department ? String(req.session.department || '').trim().toUpperCase() : null;
+
+    if (sessionDept && req.query.branch) {
+        const qBranch = String(req.query.branch).trim().toUpperCase();
+        if (qBranch !== sessionDept) {
+            return res.status(403).json({
+                error: `Cross-branch timetable access is not allowed. Current branch is ${sessionDept}.`,
+                code: 'FORBIDDEN'
+            });
+        }
+    }
+
+    const effectiveBranch = sessionDept || (req.query.branch ? String(req.query.branch).trim().toUpperCase() : getBranch().code);
+
     // Faculty query parameter isolation
     if (req.session && req.session.role === 'faculty') {
         const sessionFaculty = req.session.facultyName || req.session.name;
@@ -400,21 +415,6 @@ router.get('/', async (req, res) => {
         grid = formatTimetableGridSubjects(grid, effectiveBranch);
         return res.json({ ...grid, periodTimings: engine.getMeta().periodTimings });
     }
-
-    // Branch isolation for authenticated users (HOS or Faculty)
-    const sessionDept = req.session && req.session.department ? String(req.session.department || '').trim().toUpperCase() : null;
-
-    if (sessionDept && req.query.branch) {
-        const qBranch = String(req.query.branch).trim().toUpperCase();
-        if (qBranch !== sessionDept) {
-            return res.status(403).json({
-                error: `Cross-branch timetable access is not allowed. Current branch is ${sessionDept}.`,
-                code: 'FORBIDDEN'
-            });
-        }
-    }
-
-    const effectiveBranch = sessionDept || (req.query.branch ? String(req.query.branch).trim().toUpperCase() : getBranch().code);
 
     let targetClassName = req.query.class ? String(req.query.class).trim() : null;
     const requestedSemester = req.query.semester ? String(req.query.semester).trim().toUpperCase() : null;

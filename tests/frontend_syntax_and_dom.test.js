@@ -43,6 +43,7 @@ function run() {
         assert.ok(appCode.includes('navAttendance'), 'navAttendance referenced');
         assert.ok(appCode.includes('navInvigilation'), 'navInvigilation referenced');
         assert.ok(appCode.includes('navSchedule'), 'navSchedule referenced');
+        assert.ok(appCode.includes('navSubstitute'), 'navSubstitute referenced');
     });
 
     console.log('\n[3] Master Timetable Target Scope UI & Academic Year Structure');

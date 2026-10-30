@@ -19,26 +19,37 @@ function isConfigured() {
 }
 
 /**
- * Neon requires TLS. `sslmode` in the URL is respected when present; otherwise
- * TLS is enabled for any non-local host so a hosted database is never
- * contacted in the clear.
+ * Neon requires TLS. When `sslmode` is specified in the URL (e.g. `sslmode=verify-full`),
+ * pg-connection-string configures TLS directly from the connection string.
+ * For unadorned non-local connection strings, TLS is enabled with full certificate
+ * verification so hosted databases are never contacted in the clear.
  */
 function sslFor(url) {
+    if (!url) return undefined;
     if (/sslmode=disable/i.test(url)) return false;
     if (/^postgres(ql)?:\/\/[^/]*@?(localhost|127\.0\.0\.1)/i.test(url)) return false;
-    return { rejectUnauthorized: false };
+    if (/sslmode=/i.test(url)) {
+        // Let pg / pg-connection-string handle TLS configuration from the connection string itself
+        return undefined;
+    }
+    // Remote host with no explicit sslmode parameter: enforce secure TLS with full verification
+    return true;
 }
 
 function getPool() {
     if (!isConfigured()) return null;
     if (!pool) {
-        pool = new Pool({
+        const poolOptions = {
             connectionString: config.databaseUrl,
-            ssl: sslFor(config.databaseUrl),
             max: config.dbPoolMax,
             connectionTimeoutMillis: config.dbConnectTimeoutMs,
             idleTimeoutMillis: 30000
-        });
+        };
+        const ssl = sslFor(config.databaseUrl);
+        if (ssl !== undefined) {
+            poolOptions.ssl = ssl;
+        }
+        pool = new Pool(poolOptions);
         // An idle client dropped by the server must not take the process down.
         pool.on('error', err => console.error('[db] idle client error:', err.message));
     }

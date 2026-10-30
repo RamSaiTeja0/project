@@ -278,6 +278,11 @@
             name = 'schedule';
         } else if (isPermanentHOS && FACULTY_ONLY_VIEWS.indexOf(name) >= 0) {
             name = 'dashboard';
+        } else if (isHOS && name === 'substitute') {
+            name = 'dashboard';
+            if (window.location.hash === '#substitute') {
+                window.history.replaceState(null, '', '#dashboard');
+            }
         }
 
         Array.prototype.forEach.call(document.querySelectorAll('.view'), function (section) {
@@ -400,6 +405,11 @@
         if (el('navImport')) el('navImport').style.display = isHOS ? '' : 'none';
         if (el('navDelegation')) el('navDelegation').style.display = isPermanentHOS ? '' : 'none';
         if (el('navSchedule')) el('navSchedule').style.display = isFaculty ? '' : 'none';
+        if (el('navSubstitute')) el('navSubstitute').style.display = isHOS ? 'none' : '';
+
+        if (isHOS && viewFromHash() === 'substitute') {
+            showView('dashboard');
+        }
 
         if (el('hodDashboardOverview') && el('standardDashboardOverview')) {
             el('hodDashboardOverview').style.display = isHOS ? 'flex' : 'none';

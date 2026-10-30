@@ -116,65 +116,84 @@ async function initFromDatabase(options = {}) {
     }
     const seeder = require('../db/seed');
     const repository = require('../db/repository');
-    try {
-        await seeder.migrate();
-        const seedResult = options.seed === false
-            ? { seeded: false, reason: 'seeding skipped' }
-            : await seeder.seed();
+    const maxAttempts = options.maxAttempts || 3;
+    let lastError = null;
 
-        // Restore departments/branches
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-            const dbDepts = await repository.loadAllDepartments();
-            const { registerBranch } = require('./departments');
-            for (const dept of dbDepts) {
-                registerBranch({
-                    code: dept.code,
-                    name: dept.name,
-                    academicYear: dept.academicYear,
-                    semester: dept.semester,
-                    totalSemesters: dept.totalSemesters
-                });
+            if (attempt > 1) {
+                console.log(`[db] Retrying database connection and initialization (attempt ${attempt}/${maxAttempts})...`);
+                if (typeof db.resetPool === 'function') {
+                    await db.resetPool();
+                }
             }
-        } catch (_) {}
 
-        // Restore registered users
-        try {
-            const dbUsers = await repository.loadAllUsers();
-            const usersModule = require('./users');
-            if (typeof usersModule.syncFromDatabase === 'function') {
-                usersModule.syncFromDatabase(dbUsers);
+            await seeder.migrate();
+            const seedResult = options.seed === false
+                ? { seeded: false, reason: 'seeding skipped' }
+                : await seeder.seed();
+
+            // Restore departments/branches
+            try {
+                const dbDepts = await repository.loadAllDepartments();
+                const { registerBranch } = require('./departments');
+                for (const dept of dbDepts) {
+                    registerBranch({
+                        code: dept.code,
+                        name: dept.name,
+                        academicYear: dept.academicYear,
+                        semester: dept.semester,
+                        totalSemesters: dept.totalSemesters
+                    });
+                }
+            } catch (_) {}
+
+            // Restore registered users
+            try {
+                const dbUsers = await repository.loadAllUsers();
+                const usersModule = require('./users');
+                if (typeof usersModule.syncFromDatabase === 'function') {
+                    usersModule.syncFromDatabase(dbUsers);
+                }
+            } catch (_) {}
+
+            // Restore faculty substitutions
+            try {
+                const dbSubs = await repository.listFacultySubstitutions();
+                const substitutionsModule = require('./substitutions');
+                if (typeof substitutionsModule.syncFromDatabase === 'function') {
+                    substitutionsModule.syncFromDatabase(dbSubs);
+                }
+            } catch (_) {}
+
+            const source = await repository.loadSource(demoTimetable.meta);
+            const counts = await repository.counts();
+            if (!source.classes.length || counts.timetable === 0 || !source.faculty.length || counts.faculty === 0) {
+                source.allowEmpty = true;
             }
-        } catch (_) {}
 
-        // Restore faculty substitutions
-        try {
-            const dbSubs = await repository.listFacultySubstitutions();
-            const substitutionsModule = require('./substitutions');
-            if (typeof substitutionsModule.syncFromDatabase === 'function') {
-                substitutionsModule.syncFromDatabase(dbSubs);
+            state = buildState(source, 'neon-postgres');
+            databaseBacked = true;
+            databaseError = null;
+            return {
+                enabled: true,
+                seeded: Boolean(seedResult.seeded),
+                target: db.describeTarget(),
+                counts
+            };
+        } catch (err) {
+            lastError = err;
+            databaseBacked = false;
+            databaseError = err.message;
+            if (attempt < maxAttempts) {
+                const backoffMs = attempt * 1500;
+                console.warn(`[db] Connection attempt ${attempt}/${maxAttempts} failed: ${err.message}. Retrying in ${backoffMs}ms...`);
+                await new Promise(resolve => setTimeout(resolve, backoffMs));
             }
-        } catch (_) {}
-
-        const source = await repository.loadSource(demoTimetable.meta);
-        const counts = await repository.counts();
-        if (!source.classes.length || counts.timetable === 0 || !source.faculty.length || counts.faculty === 0) {
-            source.allowEmpty = true;
         }
-
-        state = buildState(source, 'neon-postgres');
-        databaseBacked = true;
-        databaseError = null;
-        return {
-            enabled: true,
-            seeded: Boolean(seedResult.seeded),
-            target: db.describeTarget(),
-            counts
-        };
-    } catch (err) {
-        databaseBacked = false;
-        databaseError = err.message;
-        return { enabled: false, error: err.message };
     }
+
+    return { enabled: false, error: lastError ? lastError.message : 'Database initialization failed' };
 }
 
 /** Re-read the timetable from the database after a write. */

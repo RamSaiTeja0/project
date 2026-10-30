@@ -221,9 +221,9 @@ function start(port = config.port, fallbacks = config.fallbackPorts) {
 }
 
 /**
- * Connect the database (create tables, seed when empty) and then listen. A
- * database failure is reported but never blocks startup: the app falls back to
- * the bundled demo dataset so a demonstration is always possible.
+ * Connect the database (create tables, seed when empty) and then listen.
+ * When DATABASE_URL is configured, the server requires a working database
+ * and will not silently fall back to demo data unless explicit DEMO_MODE=true is set.
  */
 async function bootstrap() {
     const shouldSeed = Boolean(config.dbSeedDemo);
@@ -231,10 +231,21 @@ async function bootstrap() {
     if (result.enabled) {
         console.log(`Database: connected to ${result.target}` +
             (result.seeded ? ' (demo data seeded)' : ' (schema ready)'));
-    } else if (result.error) {
-        console.warn(`Database: ${result.error}\n  Falling back to the bundled demo dataset.`);
+    } else if (config.databaseUrl) {
+        if (config.demoMode) {
+            console.warn(`Database: ${result.error || result.reason}\n  Explicit DEMO_MODE=true is enabled; running on bundled demo dataset.`);
+        } else {
+            console.error(`Database: FATAL — Connection failed: ${result.error || result.reason}`);
+            console.error('  Startup aborted to prevent silent fallback to demo data.');
+            console.error('  To intentionally run in offline demo mode, set DEMO_MODE=true.');
+            process.exit(1);
+        }
     } else {
-        console.log(`Database: ${result.reason}`);
+        if (config.demoMode || config.loadDemoData) {
+            console.log(`Database: ${result.reason || 'Running on bundled demo dataset (no DATABASE_URL configured).'}`);
+        } else {
+            console.log(`Database: ${result.reason || 'No DATABASE_URL configured. Running fresh instance.'}`);
+        }
     }
     return start();
 }
